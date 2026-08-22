@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Phaser Room Grid - Player Class Cave Game</title>
+
+<script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.js"></script>
+
+<style>
+    body {
+        margin: 0;
+        background: #111;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-family: Arial, sans-serif;
+    }
+
+    #gameWrapper {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    #inventory {
+        width: 180px;
+        background: #1b1b1b;
+        border: 2px solid #fff8e7;
+        padding: 12px;
+        color: white;
+        text-align: center;
+    }
+
+    #inventory h2 {
+        font-size: 22px;
+        margin: 0 0 12px 0;
+    }
+
+    #playerChoices {
+        display: grid;
+        grid-template-columns: repeat(2, 64px);
+        grid-template-rows: repeat(3, 64px);
+        gap: 8px;
+        justify-content: center;
+        margin-bottom: 10px;
+    }
+
+    .player-choice {
+        width: 64px;
+        height: 64px;
+        border: 2px solid #aaa;
+        background: #333;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+    }
+
+    .player-choice.selected {
+        border: 3px solid #fff8e7;
+        background: #555;
+    }
+
+    .player-choice img {
+        max-width: 46px;
+        max-height: 46px;
+        object-fit: contain;
+        pointer-events: none;
+    }
+
+    #playerStats {
+        font-size: 14px;
+        background: #333;
+        border: 1px solid #777;
+        padding: 8px;
+        margin-bottom: 12px;
+        min-height: 90px;
+        line-height: 1.35;
+    }
+
+    #slots {
+        display: grid;
+        grid-template-columns: repeat(3, 42px);
+        gap: 8px;
+        justify-content: center;
+    }
+
+    .slot {
+        width: 42px;
+        height: 42px;
+        background: #444;
+        border: 2px solid #aaa;
+        cursor: pointer;
+    }
+    .slot img {
+        max-width: 46px;
+        max-height: 46px;
+        object-fit: contain;
+        pointer-events: none;
+    }
+
+    canvas {
+        border: 2px solid #fff8e7;
+    }
+</style>
+</head>
+
+<body>
+
+<div id="gameWrapper">
+
+    <div id="inventory">
+        <h2>Party</h2>
+
+        <div id="playerChoices">
+            <div class="player-choice" data-player="0">
+                <img src="wizard.png" alt="Wizard">
+            </div>
+
+            <div class="player-choice selected" data-player="1">
+                <img src="warrior.png" alt="Warrior">
+            </div>
+            
+            <div class="player-choice" data-player="2">
+                <img src="rogue.png" alt="Rogue">
+            </div>
+
+            <div class="player-choice" data-player="3">
+                <img src="cleric.png" alt="Cleric">
+            </div>
+
+         
+
+       
+        </div>
+        <div id="playerStats">
+            Choose a player
+        </div>
+
+        <div id="slots">
+            <div class="slot">
+                <img src="key.png" alt="key">
+            </div>
+            <div class="slot">
+                <img src="potion.png" alt="potion">
+            </div>
+            <div class="slot">
+                <img src="spell.png" alt="spell">
+            </div>
+            <div class="slot">
+                <img src="sword.png" alt="sword">
+            </div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+        </div>
+    </div>
+
+    <div id="gameContainer"></div>
+
+</div>
+
+<script>
+
+// =====================================================
+// ROOM SETTINGS
+// =====================================================
+
+const TILE_SIZE = 64;
+const ROOM_SIZE = 10;
+const ROOM_PIXELS = ROOM_SIZE * TILE_SIZE;
+
+const WORLD_WIDTH = 8;
+const WORLD_HEIGHT = 8;
+
+// =====================================================
+// WORLD LAYOUT
+// =====================================================
+
+const WorldLayout = [
+    ["start", "empty", "empty", "empty", "death1", "empty", "empty", "cursedBow"],
+    ["redHerring", "death2", "empty", "empty", "empty", "empty", "empty", "empty"],
+    ["empty", "empty", "strengthBelt", "empty", "empty", "empty", "death3", "empty"],
+    ["boulder", "empty", "empty", "empty", "empty", "death4", "empty", "empty"],
+    ["locateScroll", "deadEnd", "empty", "death5", "empty", "speedBoots", "empty", "empty"],
+    ["deadEnd", "empty", "empty", "empty", "empty", "empty", "empty", "death6"],
+    ["key", "empty", "death7", "empty", "empty", "lake", "empty", "empty"],
+    ["death8", "empty", "deadEnd", "chest", "empty", "holyCross", "deadEnd", "boss"]
+];
+
+
+// =====================================================
+// COLOUR PALETTE
+// =====================================================
+// This determins the floor colour
+const FLOOR_COLOR = "#1E1F24";
+// This determins the wall colour pallete
+const WALL_BASE = 0x5B6B48;
+const WALL_DARK = 0x3F4A31;
+const WALL_LIGHT = 0x7A8263;
+const WALL_CHIP = 0x8B8A74;
+// This determins the players outline colour
+const PLAYER_OUTLINE = 0xFFF8E7;
+
+
+// =====================================================
+// WIN / LOSE SETTINGS
+// =====================================================
+
+// This determins the postion of the win button
+const WIN_X = ROOM_PIXELS / 2 - 100;
+const WIN_Y = ROOM_PIXELS / 2 - 50;
+
+// This determins the postion of the lose button
+const LOSE_X = ROOM_PIXELS / 2 + 100;
+const LOSE_Y = ROOM_PIXELS / 2 + 50;
+
+const END_DISTANCE = 35;
+
+const Lose_Room_X1 = 5
+const Lose_Room_Y1 = 1
+const Lose_Room_X2 = 2
+const Lose_Room_Y2 = 2
+const Lose_Room_X3 = 7
+const Lose_Room_Y3 = 3
+const Lose_Room_X4 = 5
+const Lose_Room_Y4 = 4
+const Lose_Room_X5 = 4
+const Lose_Room_Y5 = 5
+const Lose_Room_X6 = 8
+const Lose_Room_Y6 = 6
+const Lose_Room_X7 = 3
+const Lose_Room_Y7 = 7
+const Lose_Room_X8 = 1
+const Lose_Room_Y8 = 8
+// =====================================================
+// PLAYER CLASS DATA
+// =====================================================
+
+class PlayerClass {
+
+    constructor(
+        name,
+        imageKey,
+        colour,
+        speed,
+        health,
+        damage,
+        magic,
+        displayWidth,
+        displayHeight,
+        bodyWidth,
+        bodyHeight
+    ) {
+       // this deterimes the name of class, it's corisponding PNG's name and associated colour
+        this.name = name;
+        this.imageKey = imageKey;
+        this.colour = colour;
+
+        // this determines the stats of the class
+        this.speed = speed;
+        this.health = health;
+        this.damage = damage;
+        this.magic = magic;
+
+        // this determines the size of the class's icon 
+        this.displayWidth = displayWidth;
+        this.displayHeight = displayHeight;
+
+        // this determines the hit box of the class
+        this.bodyWidth = bodyWidth;
+        this.bodyHeight = bodyHeight;
+    }
+}
+
+
+const PLAYER_CLASSES = [
+new PlayerClass(
+        "Wizard",
+        "wizard",
+        0x9B5DE5,
+        220,
+        80,
+        8,
+        120,
+        42,
+        42,
+        24,
+        24
+    ),
+
+    new PlayerClass(
+        "Warrior",
+        "warrior",
+        0x5DA9E9,
+        230,
+        120,
+        30,
+        0,
+        42,
+        42,
+        24,
+        24
+    ),
+
+  new PlayerClass(
+        "Rogue",
+        "rogue",
+        0x2EC4B6,
+        330,
+        65,
+        18,
+        30,
+        42,
+        42,
+        24,
+        24
+    ),
+
+
+     
+    new PlayerClass(
+        "Cleric",
+        "cleric",
+        0xE9C46A,
+        200,
+        100,
+        10,
+        80,
+        42,
+        42,
+        24,
+        24
+    ),
+
+];
+
+
+// =====================================================
+// MAIN GAME SCENE
+// =====================================================
+
+class GameScene extends Phaser.Scene {
+
+    constructor() {
+        super();
+
+        this.roomX = 0;
+        this.roomY = 0;
+
+        this.currentPlayerClass = PLAYER_CLASSES[0];
+
+        this.wallDecorObjects = [];
+    }
+
+
+    preload() {
+      
+        this.load.image("warrior", "warrior.png");
+        this.load.image("cleric", "cleric.png");
+        this.load.image("wizard", "wizard.png");
+        this.load.image("rogue", "rogue.png");
+       
+        
+    }
+
+
+    create() {
+
+        this.cursors = this.input.keyboard.createCursorKeys();
+
+        this.wallGroup = this.physics.add.staticGroup();
+
+        this.inventory = [];
+        this.inventorySlots = document.querySelectorAll(".slot");
+
+        this.collectedRooms = new Set();
+        this.droppedItemsByRoom = {};
+
+        this.itemGroup = this.physics.add.group();
+        this.droppedGroup = this.physics.add.group();
+
+        this.inventorySlots.forEach((slot, index) => {
+            slot.addEventListener("click", () => {
+                this.dropInventoryItem(index);
+            });
+        });
+
+        this.roomText = this.add.text(
+            ROOM_PIXELS / 2,
+            ROOM_PIXELS / 2,
+            "",
+            {
+                fontSize: "36px",
+                color: "#FFF8E7",
+                stroke: "#000000",
+                strokeThickness: 4
+            }
+        );
+
+        this.roomText.setOrigin(0.5);
+        this.roomText.setDepth(20);
+
+        this.winPad = this.add.circle(WIN_X, WIN_Y, 25, 0x00ff00);
+        this.losePad = this.add.circle(LOSE_X, LOSE_Y, 25, 0xff0000);
+
+        this.winPad.setVisible(false);
+        this.losePad.setVisible(false);
+
+        this.drawRoom();
+
+        this.createPlayerCharacter(
+            ROOM_PIXELS / 2,
+            ROOM_PIXELS / 2
+        );
+
+        this.physics.add.existing(this.player);
+
+        this.player.body.setCollideWorldBounds(false);
+
+        this.applyPlayerClass(this.currentPlayerClass);
+
+        this.setupPlayerChoiceButtons();
+
+        this.physics.add.collider(
+            this.player,
+            this.wallGroup
+        );
+
+        this.physics.add.overlap(
+            this.player,
+            this.itemGroup,
+            this.collectItem,
+            null,
+            this
+        );
+
+        this.physics.add.overlap(
+            this.player,
+            this.droppedGroup,
+            this.collectDroppedItem,
+            null,
+            this
+        );
+    }
+
+
+    // =====================================================
+    // PLAYER CHARACTER
+    // =====================================================
+
+    createPlayerCharacter(x, y) {
+
+        // Coloured base circle under the player.
+        this.playerBase = this.add.circle(
+            x,
+            y,
+            19,
+            this.currentPlayerClass.colour
+        );
+
+        this.playerBase.setAlpha(0.35);
+        this.playerBase.setStrokeStyle(3, PLAYER_OUTLINE);
+        this.playerBase.setDepth(8);
+
+        // Actual player image.
+        this.player = this.add.image(
+            x,
+            y,
+            this.currentPlayerClass.imageKey
+        );
+
+        this.player.setDepth(10);
+
+        this.walkTimer = 0;
+    }
+
+
+    applyPlayerClass(playerClass) {
+
+        this.currentPlayerClass = playerClass;
+
+        this.player.setTexture(playerClass.imageKey);
+
+        this.player.setDisplaySize(
+            playerClass.displayWidth,
+            playerClass.displayHeight
+        );
+
+        // Tint the black player sprite so it is visible on the cave floor.
+        this.player.setTintFill(playerClass.colour);
+
+        if (this.playerBase) {
+            this.playerBase.setFillStyle(playerClass.colour);
+            this.playerBase.setStrokeStyle(3, PLAYER_OUTLINE);
+            this.playerBase.setAlpha(0.35);
+        }
+
+        if (this.player.body) {
+
+            this.player.body.setSize(
+                playerClass.bodyWidth,
+                playerClass.bodyHeight,
+                true
+            );
+        }
+
+        const statsBox = document.querySelector("#playerStats");
+
+        statsBox.innerHTML = `
+            <strong>${playerClass.name}</strong><br>
+            HP: ${playerClass.health}<br>
+            Damage: ${playerClass.damage}<br>
+            Magic: ${playerClass.magic}<br>
+            Speed: ${playerClass.speed}
+        `;
+    }
+
+
+    setupPlayerChoiceButtons() {
+
+        const buttons = document.querySelectorAll(".player-choice");
+
+        buttons.forEach(button => {
+
+            button.addEventListener("click", () => {
+
+                const playerIndex = Number(button.dataset.player);
+
+                const selectedClass = PLAYER_CLASSES[playerIndex];
+
+                this.applyPlayerClass(selectedClass);
+                
+                if(selectedClass.name === "cleric")
+                {
+            alert("you lose! please try again");
+            this.scene.stop();
+            return;
+        }
+                buttons.forEach(btn => {
+                    btn.classList.remove("selected");
+                });
+
+                button.classList.add("selected");
+                
+            });
+        });
+    }
+
+
+    animatePlayer(isMoving, delta) {
+
+        if (isMoving) {
+            this.walkTimer += delta;
+            this.player.angle = Math.sin(this.walkTimer / 100) * 2;
+        }
+        else {
+            this.player.angle = 0;
+        }
+
+        if (this.playerBase) {
+            this.playerBase.x = this.player.x;
+            this.playerBase.y = this.player.y;
+        }
+    }
+
+
+    // =====================================================
+    // ROOM LABEL
+    // =====================================================
+
+    updateRoomLabel() {
+
+        const letter = String.fromCharCode(65 + this.roomX);
+        const number = this.roomY + 1;
+
+        this.roomText.setText(`${letter}${number}`);
+    }
+
+
+    // =====================================================
+    // WALL DECOR CLEANUP
+    // =====================================================
+
+    clearWallDecor() {
+
+        this.wallDecorObjects.forEach(obj => {
+            obj.destroy();
+        });
+
+        this.wallDecorObjects = [];
+    }
+
+
+    addWallDecor(obj) {
+        this.wallDecorObjects.push(obj);
+    }
+
+
+    // =====================================================
+    // CAVE WALL CREATION
+    // =====================================================
+
+    createWall(x, y) {
+
+        // Main physical wall block.
+        const wall = this.add.rectangle(
+            x,
+            y,
+            TILE_SIZE,
+            TILE_SIZE,
+            WALL_BASE
+        );
+
+        wall.setDepth(3);
+
+        this.physics.add.existing(wall, true);
+        this.wallGroup.add(wall);
+
+        // Lighter top edge.
+        const topEdge = this.add.rectangle(
+            x,
+            y - TILE_SIZE / 2 + 4,
+            TILE_SIZE,
+            8,
+            WALL_LIGHT
+        );
+
+        topEdge.setDepth(4);
+        this.addWallDecor(topEdge);
+
+        // Dark lower edge.
+        const bottomEdge = this.add.rectangle(
+            x,
+            y + TILE_SIZE / 2 - 4,
+            TILE_SIZE,
+            8,
+            WALL_DARK
+        );
+
+        bottomEdge.setDepth(4);
+        this.addWallDecor(bottomEdge);
+
+        // Random-looking cave cracks.
+        const cracks = this.add.graphics();
+        cracks.setDepth(5);
+
+        cracks.lineStyle(2, WALL_DARK, 0.8);
+
+        cracks.beginPath();
+        cracks.moveTo(x - 20, y - 12);
+        cracks.lineTo(x - 8, y - 4);
+        cracks.lineTo(x - 14, y + 8);
+        cracks.strokePath();
+
+        cracks.beginPath();
+        cracks.moveTo(x + 12, y - 18);
+        cracks.lineTo(x + 4, y - 4);
+        cracks.lineTo(x + 18, y + 10);
+        cracks.strokePath();
+
+        this.addWallDecor(cracks);
+
+        // Small chipped rock highlight.
+        const chip = this.add.rectangle(
+            x + 18,
+            y - 18,
+            12,
+            4,
+            WALL_CHIP
+        );
+
+        chip.setDepth(5);
+        this.addWallDecor(chip);
+    }
+
+
+    // =====================================================
+    // INVENTORY DISPLAY
+    // =====================================================
+
+ 
+    updateInventoryDisplay() {
+
+
+        this.inventorySlots.forEach(slot => {
+            slot.style.backgroundColor = "#444";
+        });
+
+        this.inventory.forEach((img, index) => {
+            this.inventorySlots[index].style.backgroundColor = "#000"
+        });
+    }
+
+   
+    
+
+    // =====================================================
+    // DROP INVENTORY ITEM
+    // =====================================================
+
+    dropInventoryItem(slotIndex) {
+
+        if (slotIndex >= this.inventory.length) {
+            return;
+        }
+
+        const colour = this.inventory[slotIndex];
+        const roomKey = `${this.roomX},${this.roomY}`;
+
+        if (!this.droppedItemsByRoom[roomKey]) {
+            this.droppedItemsByRoom[roomKey] = [];
+        }
+
+        const tileX = Math.floor(this.player.x / TILE_SIZE);
+        const tileY = Math.floor(this.player.y / TILE_SIZE);
+
+        const dropX = tileX * TILE_SIZE + TILE_SIZE / 2;
+        const dropY = tileY * TILE_SIZE + TILE_SIZE / 2;
+
+        this.droppedItemsByRoom[roomKey].push({
+            x: dropX,
+            y: dropY,
+            colour: colour,
+            canPickupAt: this.time.now + 800
+        });
+
+        this.inventory.splice(slotIndex, 1);
+
+        this.updateInventoryDisplay();
+        this.createDroppedItems();
+    }
+
+
+    // =====================================================
+    // NORMAL ROOM ITEMS
+    // =====================================================
+
+    createRoomItems() {
+
+        this.itemGroup.clear(true, true);
+
+        const roomKey = `${this.roomX},${this.roomY}`;
+
+        const itemRooms = {
+            "1,0": 0,
+            "3,2": 1,
+            "5,1": 2,
+            "2,4": 3,
+            "7,3": 4,
+            "4,6": 5,
+            "8,5": 6,
+            "6,8": 7,
+            "9,9": 8
+        };
+
+        if (!(roomKey in itemRooms)) {
+            return;
+        }
+
+        if (this.collectedRooms.has(roomKey)) {
+            return;
+        }
+
+        const itemIndex = itemRooms[roomKey];
+        const colour = ITEM_COLOURS[itemIndex];
+
+        const item = this.add.circle(
+            ROOM_PIXELS / 2,
+            ROOM_PIXELS / 2 + 100,
+            18,
+            colour
+        );
+
+        item.setDepth(7);
+
+        item.itemColour = colour;
+        item.roomKey = roomKey;
+
+        this.physics.add.existing(item);
+
+        item.body.setCircle(18);
+
+        this.itemGroup.add(item);
+    }
+
+
+    collectItem(player, item) {
+
+        if (this.inventory.length >= 9) {
+            return;
+        }
+
+        this.inventory.push(item.itemColour);
+
+        this.updateInventoryDisplay();
+
+        this.collectedRooms.add(item.roomKey);
+
+        item.destroy();
+    }
+
+
+    // =====================================================
+    // DROPPED ITEMS
+    // =====================================================
+
+    createDroppedItems() {
+
+        this.droppedGroup.clear(true, true);
+
+        const roomKey = `${this.roomX},${this.roomY}`;
+
+        const droppedItems = this.droppedItemsByRoom[roomKey] || [];
+
+        droppedItems.forEach((itemData, index) => {
+
+            const item = this.add.rectangle(
+                itemData.x,
+                itemData.y,
+                28,
+                28,
+                itemData.colour
+            );
+
+            item.setDepth(7);
+
+            item.itemColour = itemData.colour;
+            item.roomKey = roomKey;
+            item.dropIndex = index;
+            item.canPickupAt = itemData.canPickupAt || 0;
+
+            this.physics.add.existing(item);
+
+            item.body.setSize(24, 24, true);
+
+            this.droppedGroup.add(item);
+        });
+    }
+
+
+    collectDroppedItem(player, item) {
+
+        if (this.time.now < item.canPickupAt) {
+            return;
+        }
+
+        if (this.inventory.length >= 9) {
+            return;
+        }
+
+        this.inventory.push(item.itemColour);
+
+        this.updateInventoryDisplay();
+
+        const droppedItems = this.droppedItemsByRoom[item.roomKey];
+
+        if (droppedItems) {
+            droppedItems.splice(item.dropIndex, 1);
+        }
+
+        item.destroy();
+
+        this.createDroppedItems();
+    }
+
+
+    // =====================================================
+    // ROOM DRAWING
+    // =====================================================
+
+    drawRoom() {
+
+        this.wallGroup.clear(true, true);
+        this.clearWallDecor();
+
+        const gap = Math.floor(ROOM_SIZE / 2);
+
+        const hasNorth = this.roomY > 0;
+        const hasSouth = this.roomY < WORLD_HEIGHT - 1;
+        const hasWest = this.roomX > 0;
+        const hasEast = this.roomX < WORLD_WIDTH - 1;
+
+        // Top and bottom walls.
+        for (let x = 0; x < ROOM_SIZE; x++) {
+
+            if (!(hasNorth && x === gap)) {
+                this.createWall(
+                    x * TILE_SIZE + TILE_SIZE / 2,
+                    TILE_SIZE / 2
+                );
+            }
+
+            if (!(hasSouth && x === gap)) {
+                this.createWall(
+                    x * TILE_SIZE + TILE_SIZE / 2,
+                    ROOM_PIXELS - TILE_SIZE / 2
+                );
+            }
+        }
+
+        // Left and right walls.
+        for (let y = 1; y < ROOM_SIZE - 1; y++) {
+
+            if (!(hasWest && y === gap)) {
+                this.createWall(
+                    TILE_SIZE / 2,
+                    y * TILE_SIZE + TILE_SIZE / 2
+                );
+            }
+
+            if (!(hasEast && y === gap)) {
+                this.createWall(
+                    ROOM_PIXELS - TILE_SIZE / 2,
+                    y * TILE_SIZE + TILE_SIZE / 2
+                );
+            }
+        }
+
+        const isFinalRoom =
+            this.roomX === WORLD_WIDTH - 1 &&
+            this.roomY === WORLD_HEIGHT - 1;
+        const isLoseRoom =
+            this.roomX === Lose_Room_X1 &&
+            this.roomY ===  Lose_Room_Y1  ;
+
+        this.winPad.setVisible(isFinalRoom);
+        this.losePad.setVisible(isLoseRoom);
+
+        this.createRoomItems();
+        this.createDroppedItems();
+
+        this.updateRoomLabel();
+
+       
+    
+    }
+
+
+    // =====================================================
+    // ROOM TRANSITIONS
+    // =====================================================
+
+    moveToRoom(dx, dy) {
+
+        this.roomX += dx;
+        this.roomY += dy;
+
+        this.drawRoom();
+
+        // Place the player safely inside the new room.
+        if (dx === 1) {
+            this.player.x = TILE_SIZE * 1.5;
+        }
+
+        if (dx === -1) {
+            this.player.x = ROOM_PIXELS - TILE_SIZE * 1.5;
+        }
+
+        if (dy === 1) {
+            this.player.y = TILE_SIZE * 1.5;
+        }
+
+        if (dy === -1) {
+            this.player.y = ROOM_PIXELS - TILE_SIZE * 1.5;
+        }
+
+        if (this.playerBase) {
+            this.playerBase.x = this.player.x;
+            this.playerBase.y = this.player.y;
+        }
+
+        this.player.body.setVelocity(0);
+    }
+
+    // =====================================================
+    // Death Zones
+    // =====================================================
+
+
+
+    Deathzones (roomX,roomY){
+    if (this.roomX === 4 && this.roomY === 0 || 
+    this.roomX === 1 && this.roomY === 1 || 
+    this.roomX === 6 && this.roomY === 2 || 
+    this.roomX === 5 && this.roomY === 3 ||
+    this.roomX === 4 && this.roomY === 4 || 
+    this.roomX === 7 && this.roomY === 5 || 
+    this.roomX === 2 && this.roomY === 6 || 
+    this.roomX === 0 && this.roomY === 7  );
+        alert("You lose! better luck next time");
+            this.scene.stop();
+            return;
+    }
+    // =====================================================
+    // GAME LOOP
+    // =====================================================
+
+    update(time, delta) {
+
+        const speed = this.currentPlayerClass.speed;
+        let isMoving = false;
+
+        this.player.body.setVelocity(0);
+
+        if (this.cursors.left.isDown) {
+            this.player.body.setVelocityX(-speed);
+            this.player.setFlipX(true);
+            isMoving = true;
+        }
+
+        if (this.cursors.right.isDown) {
+            this.player.body.setVelocityX(speed);
+            this.player.setFlipX(false);
+            isMoving = true;
+        }
+
+        if (this.cursors.up.isDown) {
+            this.player.body.setVelocityY(-speed);
+            isMoving = true;
+        }
+
+        if (this.cursors.down.isDown) {
+            this.player.body.setVelocityY(speed);
+            isMoving = true;
+        }
+
+        // Stop diagonal movement being faster.
+        if (isMoving) {
+            this.player.body.velocity.normalize().scale(speed);
+        }
+
+        this.animatePlayer(isMoving, delta);
+
+
+        // -------------------------
+        // ROOM CHANGES
+        // -------------------------
+
+        if (
+            this.player.x < 0 &&
+            this.roomX > 0
+        ) {
+            this.moveToRoom(-1, 0);
+        }
+
+        if (
+            this.player.x > ROOM_PIXELS &&
+            this.roomX < WORLD_WIDTH - 1
+        ) {
+            this.moveToRoom(1, 0);
+        }
+
+        if (
+            this.player.y < 0 &&
+            this.roomY > 0
+        ) {
+            this.moveToRoom(0, -1);
+        }
+
+        if (
+            this.player.y > ROOM_PIXELS &&
+            this.roomY < WORLD_HEIGHT - 1
+        ) {
+            this.moveToRoom(0, 1);
+        }
+
+
+        // -------------------------
+        // WIN / LOSE CHECK
+        // -------------------------
+ 
+
+        if (
+            this.roomX === WORLD_WIDTH - 1 &&
+            this.roomY === WORLD_HEIGHT - 1 &&
+            Phaser.Math.Distance.Between(
+                this.player.x,
+                this.player.y,
+                WIN_X,
+                WIN_Y
+            ) <= END_DISTANCE
+        ) {
+            alert("You win! Thanks for playing");
+            this.scene.stop();
+            return;
+        }
+
+     if (
+            this.roomX === Lose_Room_X1 &&
+            this.roomY === Lose_Room_Y1 &&
+            Phaser.Math.Distance.Between(
+                this.player.x,
+                this.player.y,
+                LOSE_X,
+                LOSE_Y
+           
+            ) <= END_DISTANCE
+        ) {
+            alert("You lose! better luck next time");
+            this.scene.stop();
+            return;
+        }
+    
+    }
+}
+
+
+// =====================================================
+// GAME CONFIG
+// =====================================================
+
+const config = {
+    type: Phaser.AUTO,
+    parent: "gameContainer",
+
+    width: ROOM_PIXELS,
+    height: ROOM_PIXELS,
+
+    backgroundColor: FLOOR_COLOR,
+
+    physics: {
+        default: "arcade",
+        arcade: {
+            debug: false
+        }
+    },
+
+    scene: GameScene
+};
+
+new Phaser.Game(config);
+
+</script>
+
+</body>
+</html>
