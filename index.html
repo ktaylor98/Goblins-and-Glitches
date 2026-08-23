@@ -107,7 +107,7 @@
 </head>
 
 <body>
-<h1>THIS IS A TEST</h1>
+
 <div id="gameWrapper">
 
     <div id="inventory">
@@ -215,27 +215,28 @@ const WIN_X = ROOM_PIXELS / 2 - 100;
 const WIN_Y = ROOM_PIXELS / 2 - 50;
 
 // This determins the postion of the lose button
-const LOSE_X = ROOM_PIXELS / 2 + 100;
-const LOSE_Y = ROOM_PIXELS / 2 + 50;
+const LOSE_X = ROOM_PIXELS / 2 + 220 ;
+const LOSE_Y = ROOM_PIXELS / 2 + 25;
+
 
 const END_DISTANCE = 35;
 
-const Lose_Room_X1 = 5
-const Lose_Room_Y1 = 1
-const Lose_Room_X2 = 2
-const Lose_Room_Y2 = 2
-const Lose_Room_X3 = 7
-const Lose_Room_Y3 = 3
-const Lose_Room_X4 = 5
-const Lose_Room_Y4 = 4
-const Lose_Room_X5 = 4
-const Lose_Room_Y5 = 5
-const Lose_Room_X6 = 8
-const Lose_Room_Y6 = 6
-const Lose_Room_X7 = 3
-const Lose_Room_Y7 = 7
-const Lose_Room_X8 = 1
-const Lose_Room_Y8 = 8
+const Lose_Room_X1 = WORLD_WIDTH - 4
+const Lose_Room_Y1 = WORLD_HEIGHT - 8
+const Lose_Room_X2 = WORLD_WIDTH - 6
+const Lose_Room_Y2 = WORLD_HEIGHT - 6
+const Lose_Room_X3 = WORLD_WIDTH - 2
+const Lose_Room_Y3 = WORLD_HEIGHT - 5
+const Lose_Room_X4 = WORLD_WIDTH - 3
+const Lose_Room_Y4 = WORLD_HEIGHT - 4
+const Lose_Room_X5 = WORLD_WIDTH - 5
+const Lose_Room_Y5 = WORLD_HEIGHT - 4
+const Lose_Room_X6 = WORLD_WIDTH - 4
+const Lose_Room_Y6 = WORLD_HEIGHT - 5
+const Lose_Room_X7 = WORLD_WIDTH - 2
+const Lose_Room_Y7 = WORLD_HEIGHT - 1
+const Lose_Room_X8 = WORLD_WIDTH - 8
+const Lose_Room_Y8 = WORLD_HEIGHT - 1
 // =====================================================
 // PLAYER CLASS DATA
 // =====================================================
@@ -1097,9 +1098,75 @@ class GameScene extends Phaser.Scene {
                 this.player.y,
                 LOSE_X,
                 LOSE_Y
-           
+                ) <= END_DISTANCE
+           ||
+            this.roomX === Lose_Room_X2 &&
+            this.roomY === Lose_Room_Y2 &&
+            Phaser.Math.Distance.Between(
+                this.player.x,
+                this.player.y,
+                LOSE_X,
+                LOSE_Y
+                ) <= END_DISTANCE
+                ||
+                 this.roomX === Lose_Room_X3 &&
+            this.roomY === Lose_Room_Y3 &&
+            Phaser.Math.Distance.Between(
+                this.player.x,
+                this.player.y,
+                LOSE_X,
+                LOSE_Y
+                ) <= END_DISTANCE
+                 ||
+            this.roomX === Lose_Room_X4 &&
+            this.roomY === Lose_Room_Y4 &&
+            Phaser.Math.Distance.Between(
+                this.player.x,
+                this.player.y,
+                LOSE_X,
+                LOSE_Y
+                ) <= END_DISTANCE
+                ||
+                 this.roomX === Lose_Room_X5 &&
+            this.roomY === Lose_Room_Y5 &&
+            Phaser.Math.Distance.Between(
+                this.player.x,
+                this.player.y,
+                LOSE_X,
+                LOSE_Y
+                ) <= END_DISTANCE
+                 ||
+            this.roomX === Lose_Room_X6 &&
+            this.roomY === Lose_Room_Y6 &&
+            Phaser.Math.Distance.Between(
+                this.player.x,
+                this.player.y,
+                LOSE_X,
+                LOSE_Y
+                ) <= END_DISTANCE
+                ||
+                 this.roomX === Lose_Room_X7 &&
+            this.roomY === Lose_Room_Y7 &&
+            Phaser.Math.Distance.Between(
+                this.player.x,
+                this.player.y,
+                LOSE_X,
+                LOSE_Y
+                ) <= END_DISTANCE
+                ||
+                 this.roomX === Lose_Room_X8 &&
+            this.roomY === Lose_Room_Y8 &&
+            Phaser.Math.Distance.Between(
+                this.player.x,
+                this.player.y,
+                LOSE_X,
+                LOSE_Y
             ) <= END_DISTANCE
-        ) {
+            
+    
+      
+            
+    ){
             alert("You lose! better luck next time");
             this.scene.stop();
             return;
