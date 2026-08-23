@@ -1069,7 +1069,35 @@ class GameScene extends Phaser.Scene {
             this.moveToRoom(0, 1);
         }
 
+        // -------------------------
+        // DEATH MESSAGES
+        // -------------------------
 
+        const deathMessages = [
+    "The pressure plate was the last thing you stepped on.",
+    "The walls had teeth. You found out too late.",
+    "You should have watched where you stepped.",
+    "The floor gave way beneath you.",
+    "The arrows found their mark.",
+    "The ceiling came down faster than you could run.",
+    "The pit beneath your feet was deeper than expected.",
+    "You triggered something that was best left untouched.",
+    "The swinging blade had impeccable timing.",
+    "The poison dart trap did exactly what it was designed to do.",
+    "The dungeon's fire was hotter than your armour could handle.",
+    "You opened the wrong door.",
+    "The floor wasn't quite as solid as it looked.",
+    "The spikes were waiting patiently below.",
+    "The boulder was faster than you.",
+    "You heard the click. Then everything went dark."
+];
+
+function randomDeath() {
+    let message = deathMessages[
+        Math.floor(Math.random() * deathMessages.length)
+    ];
+    return randomDeath();
+}
         // -------------------------
         // WIN / LOSE CHECK
         // -------------------------
@@ -1167,7 +1195,7 @@ class GameScene extends Phaser.Scene {
       
             
     ){
-            alert("You lose! better luck next time");
+            alert(randomDeath() + " You lose!" );
             this.scene.stop();
             return;
         }
