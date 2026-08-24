@@ -99,10 +99,29 @@
         object-fit: contain;
         pointer-events: none;
     }
+        
+     #items {
+        display: square;
+        justify-content: center;
+    }
 
+    .item {
+        width: 42px;
+        height: 42px;
+        background: #444;
+        border: 2px solid #aaa;
+        cursor: pointer;
+    }
+    .item img {
+        max-width: 46px;
+        max-height: 46px;
+        object-fit: contain;
+        pointer-events: none;
+    }
     canvas {
         border: 2px solid #fff8e7;
     }
+
 </style>
 </head>
 
@@ -151,11 +170,51 @@
             <div class="slot">
                 <img src="sword.png" alt="sword">
             </div>
-            <div class="slot"></div>
-            <div class="slot"></div>
-            <div class="slot"></div>
-            <div class="slot"></div>
-            <div class="slot"></div>
+            <div class="slot">
+                <img src="red herring.png" alt="red herring">
+            </div>
+            <div class="slot">
+                <img src="cursed bow.png" alt="cursed Bow">
+            </div>
+            <div class="slot">
+                <img src="holy glitch.png" alt="holy glitch">
+            </div>
+            <div class="slot">
+                <img src="spd boots.png" alt="speed boots">
+            </div>
+            <div class="slot">
+                <img src="str belt.png" alt="strength belt">
+            </div>
+        </div>
+
+        <div id="items">
+            <div class="item">
+                <img src="key.png" alt="key">
+            </div>
+            <div class="item">
+                <img src="potion.png" alt="potion">
+            </div>
+            <div class="item">
+                <img src="spell.png" alt="spell">
+            </div>
+            <div class="item">
+                <img src="sword.png" alt="sword">
+            </div>
+            <div class="item">
+                <img src="red herring.png" alt="red herring">
+            </div>
+            <div class="item">
+                <img src="cursed bow.png" alt="cursed Bow">
+            </div>
+            <div class="item">
+                <img src="holy glitch.png" alt="holy glitch">
+            </div>
+            <div class="item">
+                <img src="spd boots.png" alt="speed boots">
+            </div>
+            <div class="item">
+                <img src="str belt.png" alt="strength belt">
+            </div>
         </div>
     </div>
 
@@ -175,22 +234,6 @@ const ROOM_PIXELS = ROOM_SIZE * TILE_SIZE;
 
 const WORLD_WIDTH = 8;
 const WORLD_HEIGHT = 8;
-
-// =====================================================
-// WORLD LAYOUT
-// =====================================================
-
-const WorldLayout = [
-    ["start", "empty", "empty", "empty", "death1", "empty", "empty", "cursedBow"],
-    ["redHerring", "death2", "empty", "empty", "empty", "empty", "empty", "empty"],
-    ["empty", "empty", "strengthBelt", "empty", "empty", "empty", "death3", "empty"],
-    ["boulder", "empty", "empty", "empty", "empty", "death4", "empty", "empty"],
-    ["locateScroll", "deadEnd", "empty", "death5", "empty", "speedBoots", "empty", "empty"],
-    ["deadEnd", "empty", "empty", "empty", "empty", "empty", "empty", "death6"],
-    ["key", "empty", "death7", "empty", "empty", "lake", "empty", "empty"],
-    ["death8", "empty", "deadEnd", "chest", "empty", "holyCross", "deadEnd", "boss"]
-];
-
 
 // =====================================================
 // COLOUR PALETTE
@@ -215,11 +258,11 @@ const WIN_X = ROOM_PIXELS / 2 - 100;
 const WIN_Y = ROOM_PIXELS / 2 - 50;
 
 // This determins the postion of the lose button
-const LOSE_X = ROOM_PIXELS / 2 + 220 ;
-const LOSE_Y = ROOM_PIXELS / 2 + 25;
+const LOSE_X = ROOM_PIXELS / 2  ;
+const LOSE_Y = ROOM_PIXELS / 2 ;
 
 
-const END_DISTANCE = 35;
+const END_DISTANCE = 220;
 
 const Lose_Room_X1 = WORLD_WIDTH - 4
 const Lose_Room_Y1 = WORLD_HEIGHT - 8
@@ -381,6 +424,15 @@ class GameScene extends Phaser.Scene {
         this.collectedRooms = new Set();
         this.droppedItemsByRoom = {};
 
+        // Inventory-related game states
+this.chestOpen = false;
+this.objectLocated = false;
+this.holyRepelActive = false;
+this.lakeAccessible = false;
+this.holyGlitch = false;
+this.bossDoorOpen = false;
+this.rockMoved = false;
+
         this.itemGroup = this.physics.add.group();
         this.droppedGroup = this.physics.add.group();
 
@@ -406,7 +458,7 @@ class GameScene extends Phaser.Scene {
         this.roomText.setDepth(20);
 
         this.winPad = this.add.circle(WIN_X, WIN_Y, 25, 0x00ff00);
-        this.losePad = this.add.circle(LOSE_X, LOSE_Y, 25, 0xff0000);
+        this.losePad = this.add.circle(LOSE_X, LOSE_Y, 25, 0x1E1F24);
 
         this.winPad.setVisible(false);
         this.losePad.setVisible(false);
@@ -686,15 +738,31 @@ class GameScene extends Phaser.Scene {
  
     updateInventoryDisplay() {
 
+    this.inventorySlots.forEach(slot => {
 
-        this.inventorySlots.forEach(slot => {
-            slot.style.backgroundColor = "#444";
-        });
+        slot.style.backgroundColor = "#444";
 
-        this.inventory.forEach((img, index) => {
-            this.inventorySlots[index].style.backgroundColor = "#000"
-        });
-    }
+        const image = slot.querySelector("img");
+
+        if (image) {
+            image.remove();
+        }
+
+    });
+
+
+    this.inventory.forEach((item, index) => {
+
+        const image = document.createElement("img");
+
+        image.src = item.image + ".png";
+
+        image.alt = item.name;
+
+        this.inventorySlots[index].appendChild(image);
+
+    });
+}
 
    
     
@@ -766,15 +834,25 @@ class GameScene extends Phaser.Scene {
             return;
         }
 
-        const itemIndex = itemRooms[roomKey];
-        const colour = ITEM_COLOURS[itemIndex];
+        const item = itemRooms[roomKey];
 
-        const item = this.add.circle(
-            ROOM_PIXELS / 2,
-            ROOM_PIXELS / 2 + 100,
-            18,
-            colour
-        );
+const itemObject = this.add.circle(
+    ROOM_PIXELS / 2,
+    ROOM_PIXELS / 2 + 100,
+    18,
+    0xffffff
+);
+
+itemObject.setDepth(7);
+
+itemObject.item = item;
+itemObject.roomKey = roomKey;
+
+this.physics.add.existing(itemObject);
+
+itemObject.body.setCircle(18);
+
+this.itemGroup.add(itemObject);
 
         item.setDepth(7);
 
@@ -791,18 +869,23 @@ class GameScene extends Phaser.Scene {
 
     collectItem(player, item) {
 
-        if (this.inventory.length >= 9) {
-            return;
-        }
-
-        this.inventory.push(item.itemColour);
-
-        this.updateInventoryDisplay();
-
-        this.collectedRooms.add(item.roomKey);
-
-        item.destroy();
+    // Check whether the inventory is full
+    if (this.inventory.length >= 9) {
+        return;
     }
+
+    // Add the item to the inventory
+    this.inventory.push(item.item);
+
+    // Update the inventory display
+    this.updateInventoryDisplay();
+
+    // Remember that this room has been collected
+    this.collectedRooms.add(item.roomKey);
+
+    // Remove the item from the room
+    item.destroy();
+}
 
 
     // =====================================================
@@ -975,27 +1058,17 @@ class GameScene extends Phaser.Scene {
         }
 
         this.player.body.setVelocity(0);
-    }
 
-    // =====================================================
-    // Death Zones
-    // =====================================================
-
+   
+    
+}
 
 
-    Deathzones (roomX,roomY){
-    if (this.roomX === 4 && this.roomY === 0 || 
-    this.roomX === 1 && this.roomY === 1 || 
-    this.roomX === 6 && this.roomY === 2 || 
-    this.roomX === 5 && this.roomY === 3 ||
-    this.roomX === 4 && this.roomY === 4 || 
-    this.roomX === 7 && this.roomY === 5 || 
-    this.roomX === 2 && this.roomY === 6 || 
-    this.roomX === 0 && this.roomY === 7  );
-        alert("You lose! better luck next time");
-            this.scene.stop();
-            return;
-    }
+
+
+
+   
+    
     // =====================================================
     // GAME LOOP
     // =====================================================
@@ -1074,35 +1147,47 @@ class GameScene extends Phaser.Scene {
         // -------------------------
 
         const deathMessages = [
-    "The pressure plate was the last thing you stepped on.",
-    "The walls had teeth. You found out too late.",
-    "You should have watched where you stepped.",
-    "The floor gave way beneath you.",
-    "The arrows found their mark.",
-    "The ceiling came down faster than you could run.",
-    "The pit beneath your feet was deeper than expected.",
-    "You triggered something that was best left untouched.",
-    "The swinging blade had impeccable timing.",
-    "The poison dart trap did exactly what it was designed to do.",
-    "The dungeon's fire was hotter than your armour could handle.",
-    "You opened the wrong door.",
-    "The floor wasn't quite as solid as it looked.",
-    "The spikes were waiting patiently below.",
-    "The boulder was faster than you.",
-    "You heard the click. Then everything went dark."
+    "The pressure plate was the last thing you stepped on. you lose! better luck next time.",
+    "The walls had teeth. You found out too late. you lose! better luck next time.",
+    "You should have watched where you stepped. you lose! better luck next time.",
+    "The floor gave way beneath you. you lose! better luck next time.",
+    "The arrows found their mark. you lose! better luck next time.",
+    "The ceiling came down faster than you could run. you lose! better luck next time.",
+    "The pit beneath your feet was deeper than expected. you lose! better luck next time.",
+    "You triggered something that was best left untouched. you lose! better luck next time.",
+    "The swinging blade had impeccable timing. you lose! better luck next time.",
+    "The poison dart trap did exactly what it was designed to do. you lose! better luck next time.",
+    "The dungeon's fire was hotter than your armour could handle. you lose! better luck next time.",
+    "You opened the wrong door. you lose! better luck next time.",
+    "The floor wasn't quite as solid as it looked. you lose! better luck next time.",
+    "The spikes were waiting patiently below. you lose! better luck next time.",
+    "The boulder was faster than you. you lose! better luck next time.",
+    "You heard the click. Then everything went dark. you lose! better luck next time."
 ];
 
 function randomDeath() {
     let message = deathMessages[
         Math.floor(Math.random() * deathMessages.length)
     ];
-    
+    return message;
 }
-return randomDeath();
+
         // -------------------------
         // WIN / LOSE CHECK
         // -------------------------
- 
+ function checkLoseRoom() {
+
+    for (let room of Lose_Rooms) {
+
+        if (
+            this.roomX === room.x &&
+            this.roomY === room.y
+        ) {
+            this.deathLose();
+            return;
+        }
+    }
+ }
 
         if (
             this.roomX === WORLD_WIDTH - 1 &&
@@ -1196,7 +1281,7 @@ return randomDeath();
       
             
     ){
-            alert(randomDeath() + " You lose!" );
+        alert(randomDeath()) 
             this.scene.stop();
             return;
         }
