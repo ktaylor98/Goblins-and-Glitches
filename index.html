@@ -108,8 +108,8 @@
     .item {
         width: 42px;
         height: 42px;
-        background: #444;
-        border: 2px solid #aaa;
+        background: #111;
+        border: 2px solid #111;
         cursor: pointer;
     }
     .item img {
@@ -186,36 +186,7 @@
                 <img src="str belt.png" alt="strength belt">
             </div>
         </div>
-
-        <div id="items">
-            <div class="item">
-                <img src="key.png" alt="key">
-            </div>
-            <div class="item">
-                <img src="potion.png" alt="potion">
-            </div>
-            <div class="item">
-                <img src="spell.png" alt="spell">
-            </div>
-            <div class="item">
-                <img src="sword.png" alt="sword">
-            </div>
-            <div class="item">
-                <img src="red herring.png" alt="red herring">
-            </div>
-            <div class="item">
-                <img src="cursed bow.png" alt="cursed Bow">
-            </div>
-            <div class="item">
-                <img src="holy glitch.png" alt="holy glitch">
-            </div>
-            <div class="item">
-                <img src="spd boots.png" alt="speed boots">
-            </div>
-            <div class="item">
-                <img src="str belt.png" alt="strength belt">
-            </div>
-        </div>
+</div>
     </div>
 
     <div id="gameContainer"></div>
@@ -383,6 +354,166 @@ new PlayerClass(
 ];
 
 
+class ItemClass {
+
+    constructor(
+        name,
+        imageKey,
+        colour,
+        
+        displayWidth,
+        displayHeight,
+        bodyWidth,
+        bodyHeight
+    ) {
+       // this deterimes the name of class, it's corisponding PNG's name and associated colour
+        this.name = name;
+        this.imageKey = imageKey;
+        this.colour = colour;
+
+        // this determines the size of the class's icon 
+        this.displayWidth = displayWidth;
+        this.displayHeight = displayHeight;
+
+        // this determines the hit box of the class
+        this.bodyWidth = bodyWidth;
+        this.bodyHeight = bodyHeight;
+    }
+}
+
+
+const Item_Classes = [
+new ItemClass(
+        "Potion",
+        "potion",
+        0xFF0000,
+        0,
+        50,
+        0,
+        0,
+        32,
+        32,
+        16,
+        16
+    ),
+    new ItemClass(
+        "Key",
+        "key",
+        0x88FFFF,
+        0,
+        0,
+        0,
+        50,
+        32,
+        32,
+        16,
+        16
+    ),
+
+
+    new ItemClass(
+        "Seed",
+        "seed",
+        0x5DA9E9,
+        230,
+        120,
+        30,
+        0,
+        42,
+        42,
+        24,
+        24
+    ),
+
+  new ItemClass(
+        "Sword",
+        "sword",
+        0xff0000,
+        330,
+        65,
+        18,
+        30,
+        42,
+        42,
+        24,
+        24
+    ),
+
+
+     
+    new ItemClass(
+        "Cursed Bow",
+        "cursed_bow",
+        0xE9C46A,
+        200,
+        100,
+        10,
+        80,
+        42,
+        42,
+        24,
+        24
+    ),
+
+     new ItemClass(
+        "Red Herring",
+        "red herring",
+        0x5DA9E9,
+        230,
+        120,
+        30,
+        0,
+        42,
+        42,
+        24,
+        24
+    ),
+
+  new ItemClass(
+        "Holy Glitch",
+        "holy glitch",
+        0xff0000,
+        330,
+        65,
+        18,
+        30,
+        42,
+        42,
+        24,
+        24
+    ),
+
+
+     
+    new ItemClass(
+        "boots of speed",
+        "spd boots",
+        0xE9C46A,
+        200,
+        100,
+        10,
+        80,
+        42,
+        42,
+        24,
+        24
+    ),
+
+    new ItemClass(
+        "belt of strength",
+        "belt of strength",
+        0xE9C46A,
+        200,
+        100,
+        10,
+        80,
+        42,
+        42,
+        24,
+        24
+    )
+];
+
 // =====================================================
 // MAIN GAME SCENE
 // =====================================================
@@ -407,6 +538,16 @@ class GameScene extends Phaser.Scene {
         this.load.image("cleric", "cleric.png");
         this.load.image("wizard", "wizard.png");
         this.load.image("rogue", "rogue.png");
+        this.load.image("key", "key.png");
+        this.load.image("seed", "seed.png");
+        this.load.image("sword", "sword.png");
+        this.load.image("cursed_bow", "cursed_bow.png");
+        this.load.image("red_herring", "red_herring.png");
+        this.load.image("holy_glitch", "holy_glitch.png");
+        this.load.image("spd_boots", "spd_boots.png");
+        this.load.image("belt_of_strength", "belt_of_strength.png");
+        this.load.image("potion", "potion.png");
+        this.load.image("spell", "spell.png");
        
         
     }
@@ -810,83 +951,59 @@ this.rockMoved = false;
 
     createRoomItems() {
 
-        this.itemGroup.clear(true, true);
+    this.itemGroup.clear(true, true);
 
-        const roomKey = `${this.roomX},${this.roomY}`;
+    const roomKey = `${this.roomX},${this.roomY}`;
 
-        const itemRooms = {
-            "1,0": 0,
-            "3,2": 1,
-            "5,1": 2,
-            "2,4": 3,
-            "7,3": 4,
-            "4,6": 5,
-            "8,5": 6,
-            "6,8": 7,
-            "9,9": 8
-        };
+    const itemRooms = {
 
-        if (!(roomKey in itemRooms)) {
-            return;
-        }
+        "0,1": "red_herring",
+        "2,2": "belt_of_strength",
+        "7,0": "cursed_bow",
+        "5,4": "spd_boots",
+        "0,4": "spell",
+        "0,6": "key",
+        "3,7": "seed",
+        "5,7": "holy_glitch",
+        "4,3": "potion"
 
-        if (this.collectedRooms.has(roomKey)) {
-            return;
-        }
+    };
 
-        const item = itemRooms[roomKey];
-
-const itemObject = this.add.circle(
-    ROOM_PIXELS / 2,
-    ROOM_PIXELS / 2 + 100,
-    18,
-    0xffffff
-);
-
-itemObject.setDepth(7);
-
-itemObject.item = item;
-itemObject.roomKey = roomKey;
-
-this.physics.add.existing(itemObject);
-
-itemObject.body.setCircle(18);
-
-this.itemGroup.add(itemObject);
-
-        item.setDepth(7);
-
-        item.itemColour = colour;
-        item.roomKey = roomKey;
-
-        this.physics.add.existing(item);
-
-        item.body.setCircle(18);
-
-        this.itemGroup.add(item);
-    }
-
-
-    collectItem(player, item) {
-
-    // Check whether the inventory is full
-    if (this.inventory.length >= 9) {
+    // Check whether this room contains an item
+    if (!(roomKey in itemRooms)) {
         return;
     }
 
-    // Add the item to the inventory
-    this.inventory.push(item.item);
+    // Don't recreate an item that has already been collected
+    if (this.collectedRooms.has(roomKey)) {
+        return;
+    }
 
-    // Update the inventory display
-    this.updateInventoryDisplay();
+    const imageKey = itemRooms[roomKey];
 
-    // Remember that this room has been collected
-    this.collectedRooms.add(item.roomKey);
+    // Create item inside the maze
+    const itemObject = this.add.image(
+        ROOM_PIXELS / 2,
+        ROOM_PIXELS / 2 + 100,
+        imageKey
+    );
 
-    // Remove the item from the room
-    item.destroy();
+    itemObject.setDisplaySize(50, 50);
+
+    itemObject.setDepth(7);
+
+    // Store information about the item
+    itemObject.imageKey = imageKey;
+    itemObject.roomKey = roomKey;
+
+    // Add physics
+    this.physics.add.existing(itemObject);
+
+    itemObject.body.setCircle(25);
+
+    // Add to item group
+    this.itemGroup.add(itemObject);
 }
-
 
     // =====================================================
     // DROPPED ITEMS
