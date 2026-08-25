@@ -171,19 +171,19 @@
                 <img src="sword.png" alt="sword">
             </div>
             <div class="slot">
-                <img src="red herring.png" alt="red herring">
+                <img src="red_herring.png" alt="red herring">
             </div>
             <div class="slot">
-                <img src="cursed bow.png" alt="cursed Bow">
+                <img src="cursed_bow.png" alt="cursed Bow">
             </div>
             <div class="slot">
-                <img src="holy glitch.png" alt="holy glitch">
+                <img src="holy_glitch.png" alt="holy glitch">
             </div>
             <div class="slot">
-                <img src="spd boots.png" alt="speed boots">
+                <img src="spd_boots.png" alt="speed boots">
             </div>
             <div class="slot">
-                <img src="str belt.png" alt="strength belt">
+                <img src="str_belt.png" alt="strength belt">
             </div>
         </div>
 </div>
@@ -384,8 +384,8 @@ class ItemClass {
 
 const Item_Classes = [
 new ItemClass(
-        "Potion",
-        "potion",
+        "spell",
+        "spell",
         0xFF0000,
         0,
         50,
@@ -457,7 +457,7 @@ new ItemClass(
 
      new ItemClass(
         "Red Herring",
-        "red herring",
+        "red_herring",
         0x5DA9E9,
         230,
         120,
@@ -471,7 +471,7 @@ new ItemClass(
 
   new ItemClass(
         "Holy Glitch",
-        "holy glitch",
+        "holy_glitch",
         0xff0000,
         330,
         65,
@@ -487,7 +487,7 @@ new ItemClass(
      
     new ItemClass(
         "boots of speed",
-        "spd boots",
+        "spd_boots",
         0xE9C46A,
         200,
         100,
@@ -501,7 +501,7 @@ new ItemClass(
 
     new ItemClass(
         "belt of strength",
-        "belt of strength",
+        "str_belt",
         0xE9C46A,
         200,
         100,
@@ -512,6 +512,18 @@ new ItemClass(
         24,
         24
     )
+];
+const INVENTORY_ITEMS = [
+    "key",
+    "potion",
+    "spell",
+    "sword",
+    "red_herring",
+    "cursed_bow",
+    "holy_glitch",
+    "spd_boots",
+    "str_belt"
+
 ];
 
 // =====================================================
@@ -560,10 +572,12 @@ class GameScene extends Phaser.Scene {
         this.wallGroup = this.physics.add.staticGroup();
 
         this.inventory = [];
-        this.inventorySlots = document.querySelectorAll(".slot");
+    this.inventorySlots = document.querySelectorAll(".slot");
 
-        this.collectedRooms = new Set();
-        this.droppedItemsByRoom = {};
+    this.collectedItems = new Set();
+    this.collectedRooms = new Set();
+
+    this.droppedItemsByRoom = {};
 
         // Inventory-related game states
 this.chestOpen = false;
@@ -618,6 +632,8 @@ this.rockMoved = false;
         this.applyPlayerClass(this.currentPlayerClass);
 
         this.setupPlayerChoiceButtons();
+
+        this.updateInventoryDisplay();
 
         this.physics.add.collider(
             this.player,
@@ -871,40 +887,45 @@ this.rockMoved = false;
         this.addWallDecor(chip);
     }
 
+// =====================================================
+// INVENTORY DISPLAY
+// =====================================================
 
-    // =====================================================
-    // INVENTORY DISPLAY
-    // =====================================================
+updateInventoryDisplay() {
 
- 
-    updateInventoryDisplay() {
+    this.inventorySlots.forEach((slot, index) => {
 
-    this.inventorySlots.forEach(slot => {
+        // Remove anything currently inside the slot
+        slot.innerHTML = "";
 
-        slot.style.backgroundColor = "#444";
+        // Get the item that belongs in this slot
+        const imageKey = INVENTORY_ITEMS[index];
 
-        const image = slot.querySelector("img");
-
-        if (image) {
-            image.remove();
-        }
-
-    });
-
-
-    this.inventory.forEach((item, index) => {
-
+        // Create the image
         const image = document.createElement("img");
 
-        image.src = item.image + ".png";
+        image.src = imageKey + ".png";
+        image.alt = imageKey;
 
-        image.alt = item.name;
+        // If the item hasn't been collected,
+        // make it grey and faded
+        if (!this.collectedItems.has(imageKey)) {
 
-        this.inventorySlots[index].appendChild(image);
+            image.style.filter = "grayscale(100%)";
+            image.style.opacity = "0.005";
+
+        } else {
+
+            // Collected item appears normally
+            image.style.filter = "none";
+            image.style.opacity = "1";
+
+        }
+
+        slot.appendChild(image);
 
     });
 }
-
    
     
 
@@ -914,35 +935,55 @@ this.rockMoved = false;
 
     dropInventoryItem(slotIndex) {
 
-        if (slotIndex >= this.inventory.length) {
-            return;
-        }
-
-        const colour = this.inventory[slotIndex];
-        const roomKey = `${this.roomX},${this.roomY}`;
-
-        if (!this.droppedItemsByRoom[roomKey]) {
-            this.droppedItemsByRoom[roomKey] = [];
-        }
-
-        const tileX = Math.floor(this.player.x / TILE_SIZE);
-        const tileY = Math.floor(this.player.y / TILE_SIZE);
-
-        const dropX = tileX * TILE_SIZE + TILE_SIZE / 2;
-        const dropY = tileY * TILE_SIZE + TILE_SIZE / 2;
-
-        this.droppedItemsByRoom[roomKey].push({
-            x: dropX,
-            y: dropY,
-            colour: colour,
-            canPickupAt: this.time.now + 800
-        });
-
-        this.inventory.splice(slotIndex, 1);
-
-        this.updateInventoryDisplay();
-        this.createDroppedItems();
+    // Make sure there is actually an item in this slot
+    if (slotIndex >= this.inventory.length) {
+        return;
     }
+
+    // Get the actual item object
+    const item = this.inventory[slotIndex];
+
+    const roomKey = `${this.roomX},${this.roomY}`;
+
+    // Create an array for this room if one doesn't exist
+    if (!this.droppedItemsByRoom[roomKey]) {
+        this.droppedItemsByRoom[roomKey] = [];
+    }
+
+    // Find the tile the player is standing on
+    const tileX = Math.floor(this.player.x / TILE_SIZE);
+    const tileY = Math.floor(this.player.y / TILE_SIZE);
+
+    const dropX = tileX * TILE_SIZE + TILE_SIZE / 2;
+    const dropY = tileY * TILE_SIZE + TILE_SIZE / 2;
+
+    // Save the dropped item
+    this.droppedItemsByRoom[roomKey].push({
+        x: dropX,
+        y: dropY,
+
+        // Store the item's image
+        imageKey: item.imageKey,
+
+        // Store the item itself
+        item: item,
+
+        // Prevent immediately picking it back up
+        canPickupAt: this.time.now + 800
+    });
+
+    // Remove the item from the inventory
+    this.inventory.splice(slotIndex, 1);
+
+    // It is no longer considered collected
+    this.collectedItems.delete(item.imageKey);
+
+    // Update the inventory
+    this.updateInventoryDisplay();
+
+    // Recreate the dropped item in the maze
+    this.createDroppedItems();
+}
 
 
     // =====================================================
@@ -955,18 +996,17 @@ this.rockMoved = false;
 
     const roomKey = `${this.roomX},${this.roomY}`;
 
-    const itemRooms = {
+  const itemRooms = {
 
-        "0,1": "red_herring",
-        "2,2": "belt_of_strength",
-        "7,0": "cursed_bow",
-        "5,4": "spd_boots",
-        "0,4": "spell",
-        "0,6": "key",
-        "3,7": "seed",
-        "5,7": "holy_glitch",
-        "4,3": "potion"
-
+    "0,1": "red_herring",
+    "2,2": "str_belt",
+    "7,0": "cursed_bow",
+    "5,4": "spd_boots",
+    "0,4": "spell",
+    "0,6": "key",
+    "3,7": "seed",
+    "5,7": "holy_glitch",
+    "4,3": "sword"
     };
 
     // Check whether this room contains an item
@@ -1005,69 +1045,115 @@ this.rockMoved = false;
     this.itemGroup.add(itemObject);
 }
 
+// =====================================================
+// COLLECT NORMAL ITEMS
+// =====================================================
+
+collectItem(player, item) {
+
+    const itemName = item.imageKey;
+
+    // Don't pick up the same item twice
+    if (this.collectedItems.has(itemName)) {
+        return;
+    }
+
+    // Don't allow more than 9 items
+    if (this.inventory.length >= 9) {
+        return;
+    }
+
+    // Mark the item as collected
+    this.collectedItems.add(itemName);
+
+    // Add the item to the inventory
+    this.inventory.push(item);
+
+    // Remember that the item in this room has been collected
+    this.collectedRooms.add(item.roomKey);
+
+    // Update the inventory
+    this.updateInventoryDisplay();
+
+    // Remove the item from the maze
+    item.destroy();
+}
     // =====================================================
     // DROPPED ITEMS
     // =====================================================
 
-    createDroppedItems() {
+   createDroppedItems() {
 
-        this.droppedGroup.clear(true, true);
+    this.droppedGroup.clear(true, true);
 
-        const roomKey = `${this.roomX},${this.roomY}`;
+    const roomKey = `${this.roomX},${this.roomY}`;
 
-        const droppedItems = this.droppedItemsByRoom[roomKey] || [];
+    const droppedItems = this.droppedItemsByRoom[roomKey] || [];
 
-        droppedItems.forEach((itemData, index) => {
+    droppedItems.forEach((itemData, index) => {
 
-            const item = this.add.rectangle(
-                itemData.x,
-                itemData.y,
-                28,
-                28,
-                itemData.colour
-            );
+        // Create the actual item image
+        const item = this.add.image(
+            itemData.x,
+            itemData.y,
+            itemData.imageKey
+        );
 
-            item.setDepth(7);
+        item.setDisplaySize(50, 50);
+        item.setDepth(7);
 
-            item.itemColour = itemData.colour;
-            item.roomKey = roomKey;
-            item.dropIndex = index;
-            item.canPickupAt = itemData.canPickupAt || 0;
+        // Store information needed when picking it up
+        item.imageKey = itemData.imageKey;
+        item.item = itemData.item;
+        item.roomKey = roomKey;
+        item.dropIndex = index;
+        item.canPickupAt = itemData.canPickupAt || 0;
 
-            this.physics.add.existing(item);
+        // Add physics
+        this.physics.add.existing(item);
 
-            item.body.setSize(24, 24, true);
+        item.body.setCircle(25);
 
-            this.droppedGroup.add(item);
-        });
-    }
+        // Add to dropped item group
+        this.droppedGroup.add(item);
+    });
+}
 
 
     collectDroppedItem(player, item) {
 
-        if (this.time.now < item.canPickupAt) {
-            return;
-        }
-
-        if (this.inventory.length >= 9) {
-            return;
-        }
-
-        this.inventory.push(item.itemColour);
-
-        this.updateInventoryDisplay();
-
-        const droppedItems = this.droppedItemsByRoom[item.roomKey];
-
-        if (droppedItems) {
-            droppedItems.splice(item.dropIndex, 1);
-        }
-
-        item.destroy();
-
-        this.createDroppedItems();
+    // Prevent immediately picking up a dropped item
+    if (this.time.now < item.canPickupAt) {
+        return;
     }
 
+    // Inventory is limited to 9 items
+    if (this.inventory.length >= 9) {
+        return;
+    }
+
+    // Add the actual item back into the inventory
+    this.inventory.push(item.item);
+
+    // Mark it as collected
+    this.collectedItems.add(item.imageKey);
+
+    // Remove it from the dropped items list
+    const droppedItems = this.droppedItemsByRoom[item.roomKey];
+
+    if (droppedItems) {
+        droppedItems.splice(item.dropIndex, 1);
+    }
+
+    // Remove the physical item
+    item.destroy();
+
+    // Update the inventory
+    this.updateInventoryDisplay();
+
+    // Recreate remaining dropped items
+    this.createDroppedItems();
+}
 
     // =====================================================
     // ROOM DRAWING
