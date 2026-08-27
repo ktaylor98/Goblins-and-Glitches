@@ -164,7 +164,7 @@
                 <img src="key.png" alt="key">
             </div>
             <div class="slot">
-                <img src="seed.png" alt="seed">
+                <img src="poition.png" alt="potion">
             </div>
             <div class="slot">
                 <img src="spell.png" alt="spell">
@@ -186,6 +186,15 @@
             </div>
             <div class="slot">
                 <img src="str_belt.png" alt="strength belt">
+            </div>
+        </div>
+
+        <div id="interactibles">
+            <div class="interactible">
+                <img src="chest.png" alt="chest">
+            </div>
+            <div class="interactible">
+                <img src="lake.png" alt="lake">
             </div>
         </div>
 </div>
@@ -393,10 +402,10 @@ new ItemClass(
         50,
         0,
         0,
-        32,
-        32,
-        16,
-        16
+        42,
+        42,
+        42,
+        42
     ),
     new ItemClass(
         "Key",
@@ -406,16 +415,16 @@ new ItemClass(
         0,
         0,
         50,
-        32,
-        32,
-        16,
-        16
+        42,
+        42,
+        42,
+        42
     ),
 
 
     new ItemClass(
-        "Seed",
-        "seed",
+        "Potion",
+        "potion",
         0x5DA9E9,
         230,
         120,
@@ -423,8 +432,8 @@ new ItemClass(
         0,
         42,
         42,
-        24,
-        24
+        42,
+        42
     ),
 
   new ItemClass(
@@ -437,8 +446,8 @@ new ItemClass(
         30,
         42,
         42,
-        24,
-        24
+        42,
+        42
     ),
 
 
@@ -453,8 +462,8 @@ new ItemClass(
         80,
         42,
         42,
-        24,
-        24
+        42,
+        42
     ),
 
      new ItemClass(
@@ -467,8 +476,8 @@ new ItemClass(
         0,
         42,
         42,
-        24,
-        24
+        42,
+        42
     ),
 
   new ItemClass(
@@ -481,8 +490,8 @@ new ItemClass(
         30,
         42,
         42,
-        24,
-        24
+        42,
+        42
     ),
 
 
@@ -497,8 +506,8 @@ new ItemClass(
         80,
         42,
         42,
-        24,
-        24
+        42,
+        42
     ),
 
     new ItemClass(
@@ -511,10 +520,77 @@ new ItemClass(
         80,
         42,
         42,
-        24,
-        24
-    )
+        42,
+        42
+    ),
 ];
+class interactibleClass {
+
+    constructor(
+        name,
+        imageKey,
+        colour,
+        
+        displayWidth,
+        displayHeight,
+        bodyWidth,
+        bodyHeight
+    ) {
+       // this deterimes the name of class, it's corisponding PNG's name and associated colour
+        this.name = name;
+        this.imageKey = imageKey;
+        this.colour = colour;
+
+        // this determines the size of the class's icon 
+        this.displayWidth = displayWidth;
+        this.displayHeight = displayHeight;
+
+        // this determines the hit box of the class
+        this.bodyWidth = bodyWidth;
+        this.bodyHeight = bodyHeight;
+    }
+}
+const interactibles_Classes = [
+new interactibleClass(
+        "chest",
+        "chest",
+        0xFF0000,
+        0,
+        50,
+        0,
+        0,
+        32,
+        32,
+        32,
+        32
+    ),
+    new interactibleClass(
+        "lake",
+        "lake",
+        0x88FFFF,
+        0,
+        0,
+        0,
+        50,
+        32,
+        32,
+        32,
+        32
+    ),
+     new interactibleClass(
+        "Boss Room Door",
+        "boss_door",
+        0x88FFFF,
+        0,
+        0,
+        0,
+        50,
+        32,
+        32,
+        32,
+        32
+    ),
+]
 const INVENTORY_ITEMS = [
     "key",
     "seed",
@@ -532,8 +608,20 @@ const USABLE_ITEMS = [
     "key",
     "spell",
     "seed",
-    "holy_glitch",
     "red_herring"
+];
+const item_targets = {
+    "key": "chest",
+    "spell": "chest",
+    "seed": "lake",
+    "holy_glitch": "boss_room",
+    "red_herring": "holy_glitch"
+};
+const interactibles = [
+  "chest",
+    "lake",
+    "boss_room_door" 
+   
 ];
 
 // =====================================================
@@ -569,6 +657,10 @@ class GameScene extends Phaser.Scene {
         this.load.image("spd_boots", "spd_boots.png");
         this.load.image("belt_of_strength", "belt_of_strength.png");
         this.load.image("spell", "spell.png");
+        this.load.image("potion", "potion.png");
+        this.load.image("chest", "chest.png");
+        this.load.image("lake", "lake.png");
+        this.load.image("boss_door", "boss_door.png");
        
         
     }
@@ -918,10 +1010,6 @@ this.rockMoved = false;
             this.useSpell(slotIndex);
             break;
 
-        case "seed":
-            this.useSeed(slotIndex);
-            break;
-
         case "holy_glitch":
             this.useHolyGlitch(slotIndex);
             break;
@@ -1148,10 +1236,12 @@ updateInventoryDisplay() {
     "7,0": "cursed_bow",
     "5,4": "spd_boots",
     "0,4": "spell",
-    "0,6": "key",
-    "3,7": "seed",
+    "3,4": "key",
+    "4,7": "potion",
     "4,3": "sword",
     "6,6": "holy_glitch",
+    "3,8": "chest",
+    "6,7": "boss_door"
     };
 
     // Check whether this room contains an item
@@ -1298,7 +1388,53 @@ collectItem(player, item) {
 
     // Recreate remaining dropped items
     this.createDroppedItems();
+    
 }
+// =====================================================
+// CHECK ITEM USE
+// =====================================================
+
+canUseItem(itemName) {
+
+    const target = this.getItemTarget(itemName);
+
+    if (!target) {
+        return false;
+    }
+
+    // Spell can be used to locate the chest
+    if (itemName === "spell") {
+        return !this.spellUsed;
+    }
+
+    // Key can only be used after the chest has been located
+    if (itemName === "key") {
+        return this.objectLocated && !this.chestOpen;
+    }
+
+    // Seed can be used at the lake
+    if (itemName === "seed") {
+        return this.lakeAccessible && !this.seedUsed;
+    }
+
+    // Red herring can be used at the lake
+    if (itemName === "red_herring") {
+        return this.lakeAccessible && !this.redHerringUsed;
+    }
+
+    // Holy glitch can be used at the boss
+    if (itemName === "holy_glitch") {
+        return this.holyGlitch && !this.bossDoorOpen;
+    }
+
+    // Sword can be used at the boss
+    if (itemName === "sword") {
+        return this.bossDoorOpen && !this.swordUsed;
+    }
+
+    return false;
+}
+
 
     // =====================================================
     // ROOM DRAWING
