@@ -87,18 +87,20 @@
     }
 
     .slot {
-        width: 42px;
-        height: 42px;
-        background: #444;
-        border: 2px solid #aaa;
-        cursor: pointer;
-    }
-    .slot img {
-        max-width: 46px;
-        max-height: 46px;
-        object-fit: contain;
-        pointer-events: none;
-    }
+    width: 42px;
+    height: 42px;
+    background: #444;
+    border: 2px solid #aaa;
+    cursor: pointer;
+    position: relative;
+}
+
+.slot img {
+    width: 38px;
+    height: 38px;
+    object-fit: contain;
+    pointer-events: none;
+}
         
      #items {
         display: square;
@@ -162,7 +164,7 @@
                 <img src="key.png" alt="key">
             </div>
             <div class="slot">
-                <img src="potion.png" alt="potion">
+                <img src="potion.png" alt="sword">
             </div>
             <div class="slot">
                 <img src="spell.png" alt="spell">
@@ -526,6 +528,14 @@ const INVENTORY_ITEMS = [
 
 ];
 
+const USABLE_ITEMS = [
+    "key",
+    "spell",
+    "seed",
+    "holy_glitch",
+    "red_herring"
+];
+
 // =====================================================
 // MAIN GAME SCENE
 // =====================================================
@@ -887,6 +897,103 @@ this.rockMoved = false;
         this.addWallDecor(chip);
     }
 
+    useItem(slotIndex) {
+
+    // Make sure the slot contains an item
+    if (slotIndex >= this.inventory.length) {
+        return;
+    }
+
+    const item = this.inventory[slotIndex];
+
+    console.log("Using item:", item.name);
+
+    // Decide what the item does
+    switch (item.imageKey) {
+
+        case "key":
+            this.useKey(slotIndex);
+            break;
+
+        case "spell":
+            this.useSpell(slotIndex);
+            break;
+
+        case "seed":
+            this.useSeed(slotIndex);
+            break;
+
+        case "holy_glitch":
+            this.useHolyGlitch(slotIndex);
+            break;
+
+        case "red_herring":
+            this.useRedHerring(slotIndex);
+            break;
+
+        default:
+            console.log("This item cannot be used.");
+            break;
+    }
+}
+
+useKey(slotIndex) {
+
+    console.log("Key used.");
+
+    // The actual chest-opening code will go here
+}
+
+useSpell(slotIndex) {
+
+    console.log("Spell used.");
+
+    // The actual spell function will go here
+}
+
+useSeed(slotIndex) {
+
+    console.log("Seed used.");
+
+    // The actual lake/seed function will go here
+}
+
+useHolyGlitch(slotIndex) {
+
+    console.log("Holy Glitch used.");
+
+    // The actual boss-room function will go here
+}
+
+useRedHerring(slotIndex) {
+
+    // Make sure the Holy Glitch hasn't already been obtained
+    if (this.holyGlitch) {
+        alert("The Red Herring has already revealed its secret.");
+        return;
+    }
+
+    // The Red Herring is the ONLY way to obtain the Holy Glitch
+    this.holyGlitch = true;
+
+    // Remove the Red Herring
+    this.inventory.splice(slotIndex, 1);
+
+    // Find the Holy Glitch item data
+    const holyGlitch = Item_Classes.find(
+        item => item.imageKey === "holy_glitch"
+    );
+
+    // Add Holy Glitch to inventory
+    if (holyGlitch) {
+        this.inventory.push(holyGlitch);
+    }
+
+    // Update the inventory display
+    this.updateInventoryDisplay();
+
+    alert("The Red Herring reveals the Holy Glitch!");
+}
 // =====================================================
 // INVENTORY DISPLAY
 // =====================================================
@@ -895,35 +1002,74 @@ updateInventoryDisplay() {
 
     this.inventorySlots.forEach((slot, index) => {
 
-        // Remove anything currently inside the slot
+        // Clear the slot
         slot.innerHTML = "";
 
-        // Get the item that belongs in this slot
+        // Find which item belongs to this slot
         const imageKey = INVENTORY_ITEMS[index];
 
-        // Create the image
+        // Create item image
         const image = document.createElement("img");
 
         image.src = imageKey + ".png";
         image.alt = imageKey;
 
-        // If the item hasn't been collected,
-        // make it grey and faded
-        if (!this.collectedItems.has(imageKey)) {
+        // Check whether the player currently owns this item
+        const hasItem = this.inventory.some(
+            item => item.imageKey === imageKey
+        );
+
+        // -------------------------------------------------
+        // ITEM HAS NOT BEEN COLLECTED
+        // -------------------------------------------------
+
+        if (!hasItem) {
 
             image.style.filter = "grayscale(100%)";
-            image.style.opacity = "0.005";
+            image.style.opacity = "0.15";
 
-        } else {
+            slot.appendChild(image);
 
-            // Collected item appears normally
-            image.style.filter = "none";
-            image.style.opacity = "1";
-
+            return;
         }
+
+        // -------------------------------------------------
+        // ITEM IS IN INVENTORY
+        // -------------------------------------------------
+
+        image.style.filter = "none";
+        image.style.opacity = "1";
 
         slot.appendChild(image);
 
+        // -------------------------------------------------
+        // CHECK IF ITEM IS USABLE
+        // -------------------------------------------------
+
+        if (USABLE_ITEMS.includes(imageKey)) {
+
+            const useButton = document.createElement("button");
+
+            useButton.textContent = "USE";
+
+            useButton.style.position = "absolute";
+            useButton.style.bottom = "-18px";
+            useButton.style.left = "50%";
+            useButton.style.transform = "translateX(-50%)";
+            useButton.style.fontSize = "9px";
+            useButton.style.padding = "2px 5px";
+            useButton.style.cursor = "pointer";
+
+            useButton.addEventListener("click", (event) => {
+
+                // Stop the click from also dropping the item
+                event.stopPropagation();
+
+                this.useItem(index);
+            });
+
+            slot.appendChild(useButton);
+        }
     });
 }
    
@@ -1005,7 +1151,6 @@ updateInventoryDisplay() {
     "0,4": "spell",
     "0,6": "key",
     "3,7": "seed",
-    "5,7": "holy_glitch",
     "4,3": "sword"
     };
 
@@ -1267,10 +1412,6 @@ collectItem(player, item) {
 }
 
 
-
-
-
-   
     
     // =====================================================
     // GAME LOOP
