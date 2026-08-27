@@ -164,7 +164,7 @@
                 <img src="key.png" alt="key">
             </div>
             <div class="slot">
-                <img src="potion.png" alt="sword">
+                <img src="seed.png" alt="seed">
             </div>
             <div class="slot">
                 <img src="spell.png" alt="spell">
@@ -517,7 +517,7 @@ new ItemClass(
 ];
 const INVENTORY_ITEMS = [
     "key",
-    "potion",
+    "seed",
     "spell",
     "sword",
     "red_herring",
@@ -568,7 +568,6 @@ class GameScene extends Phaser.Scene {
         this.load.image("holy_glitch", "holy_glitch.png");
         this.load.image("spd_boots", "spd_boots.png");
         this.load.image("belt_of_strength", "belt_of_strength.png");
-        this.load.image("potion", "potion.png");
         this.load.image("spell", "spell.png");
        
         
@@ -1026,7 +1025,7 @@ updateInventoryDisplay() {
         if (!hasItem) {
 
             image.style.filter = "grayscale(100%)";
-            image.style.opacity = "0.15";
+            image.style.opacity = "0.05";
 
             slot.appendChild(image);
 
@@ -1151,7 +1150,8 @@ updateInventoryDisplay() {
     "0,4": "spell",
     "0,6": "key",
     "3,7": "seed",
-    "4,3": "sword"
+    "4,3": "sword",
+    "6,5": "holy_glitch",
     };
 
     // Check whether this room contains an item
