@@ -196,6 +196,9 @@
             <div class="interactible">
                 <img src="lake.png" alt="lake">
             </div>
+            <div class="interactible">
+                <img src="boss_door.png" alt="boss door">
+            </div>
         </div>
 </div>
     </div>
@@ -618,7 +621,7 @@ const item_targets = {
     "red_herring": "holy_glitch"
 };
 const interactibles = [
-  "chest",
+    "chest",
     "lake",
     "boss_room_door" 
    
@@ -691,6 +694,7 @@ this.rockMoved = false;
 
         this.itemGroup = this.physics.add.group();
         this.droppedGroup = this.physics.add.group();
+        this.interactableGroup = this.physics.add.staticGroup();
 
         this.inventorySlots.forEach((slot, index) => {
             slot.addEventListener("click", () => {
@@ -1279,7 +1283,47 @@ updateInventoryDisplay() {
     // Add to item group
     this.itemGroup.add(itemObject);
 }
+// =====================================================
+// INTERACTABLE OBJECTS
+// =====================================================
 
+createInteractables() {
+
+    this.interactableGroup.clear(true, true);
+
+    const roomKey = `${this.roomX},${this.roomY}`;
+
+    const interactableRooms = {
+
+        "3,7": "chest",
+        "4,5": "lake",
+        "6,7": "boss_door"
+
+    };
+
+    // Check if this room contains an interactable
+    if (!(roomKey in interactableRooms)) {
+        return;
+    }
+
+    const imageKey = interactableRooms[roomKey];
+
+    const interactable = this.add.image(
+        ROOM_PIXELS / 2,
+        ROOM_PIXELS / 2 + 100,
+        imageKey
+    );
+
+    interactable.setDisplaySize(70, 70);
+    interactable.setDepth(6);
+
+    // Store information about the object
+    interactable.imageKey = imageKey;
+    interactable.roomKey = roomKey;
+
+    // Add it to the interactable group
+    this.interactableGroup.add(interactable);
+}
 // =====================================================
 // COLLECT NORMAL ITEMS
 // =====================================================
