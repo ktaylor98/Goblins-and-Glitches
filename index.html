@@ -562,10 +562,10 @@ new interactibleClass(
         50,
         0,
         0,
-        32,
-        32,
-        32,
-        32
+        1,
+        1,
+        1,
+        1
     ),
     new interactibleClass(
         "lake",
@@ -575,10 +575,10 @@ new interactibleClass(
         0,
         0,
         50,
-        32,
-        32,
-        32,
-        32
+        1,
+        1,
+        1,
+        1
     ),
      new interactibleClass(
         "Boss Room Door",
@@ -588,8 +588,8 @@ new interactibleClass(
         0,
         0,
         50,
-        32,
-        32,
+        1,
+        1,
         32,
         32
     ),
@@ -606,7 +606,12 @@ const INVENTORY_ITEMS = [
     "str_belt"
 
 ];
-
+const interactibles = [
+    "chest",
+    "lake",
+    "boss_room_door" 
+   
+];
 const USABLE_ITEMS = [
     "key",
     "spell",
@@ -620,12 +625,7 @@ const item_targets = {
     "holy_glitch": "boss_room",
     "red_herring": "holy_glitch"
 };
-const interactibles = [
-    "chest",
-    "lake",
-    "boss_room_door" 
-   
-];
+
 
 // =====================================================
 // MAIN GAME SCENE
@@ -1323,6 +1323,11 @@ createInteractables() {
 
     // Add it to the interactable group
     this.interactableGroup.add(interactable);
+
+interactable.type = "chest"
+if (item.imageKey === "key" && target.type === "chest") {
+    // Open chest
+}
 }
 // =====================================================
 // COLLECT NORMAL ITEMS
@@ -1544,6 +1549,7 @@ canUseItem(itemName) {
 
         this.createRoomItems();
         this.createDroppedItems();
+        this.createInteractables();
 
         this.updateRoomLabel();
 
