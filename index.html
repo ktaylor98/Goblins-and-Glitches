@@ -164,13 +164,13 @@
                 <img src="key.png" alt="key">
             </div>
             <div class="slot">
-                <img src="poition.png" alt="potion">
+                <img src="holy_cross.png" alt="holy cross">
             </div>
             <div class="slot">
                 <img src="spell.png" alt="spell">
             </div>
             <div class="slot">
-                <img src="sword.png" alt="sword">
+                <img src="seed.png" alt="seed">
             </div>
             <div class="slot">
                 <img src="red_herring.png" alt="red herring">
@@ -416,8 +416,8 @@ new ItemClass(
 
 
     new ItemClass(
-        "Potion",
-        "potion",
+        "holy_cross",
+        "holy_cross",
         0x5DA9E9,
         230,
         120,
@@ -430,8 +430,8 @@ new ItemClass(
     ),
 
   new ItemClass(
-        "Sword",
-        "sword",
+        "Seed",
+        "seed",
         0xff0000,
         330,
         65,
@@ -474,7 +474,7 @@ new ItemClass(
     ),
 
   new ItemClass(
-        "Holy Glitch",
+        "holy glitch",
         "holy_glitch",
         0xff0000,
         330,
@@ -586,9 +586,9 @@ new interactibleClass(
 ]
 const INVENTORY_ITEMS = [
     "key",
-    "potion",
+    "holy_cross",
     "spell",
-    "sword",
+    "seed",
     "red_herring",
     "cursed_bow",
     "holy_glitch",
@@ -643,14 +643,14 @@ class GameScene extends Phaser.Scene {
         this.load.image("rogue", "rogue.png");
         this.load.image("key", "key.png");
         this.load.image("seed", "seed.png");
-        this.load.image("sword", "sword.png");
+        this.load.image("holy_cross", "holy_cross.png");
         this.load.image("cursed_bow", "cursed_bow.png");
         this.load.image("red_herring", "red_herring.png");
         this.load.image("holy_glitch", "holy_glitch.png");
         this.load.image("spd_boots", "spd_boots.png");
         this.load.image("belt_of_strength", "belt_of_strength.png");
         this.load.image("spell", "spell.png");
-        this.load.image("potion", "potion.png");
+        this.load.image("str_belt", "str_belt.png");
         this.load.image("chest", "chest.png");
         this.load.image("lake", "lake.png");
         this.load.image("boss_door", "boss_door.png");
@@ -1204,7 +1204,7 @@ updateInventoryDisplay() {
     "0,4": "spell",
     "3,0": "key",
     "4,7": "potion",
-    "6,6": "holy_glitch"
+    
     };
 
     // Check whether this room contains an item
@@ -1451,7 +1451,7 @@ interactChest(object) {
     }
 
     alert(
-        "The key unlocks the chest. Inside is a mysterious sword!"
+        "The key unlocks the chest. Inside is a mysterious seed!"
     );
 
     this.chestOpened = true;
@@ -1463,16 +1463,87 @@ interactChest(object) {
         item.imageKey !== "key"
     );
 
-    // Give sword
-    this.collectedItems.add("sword");
+    // Give seed
+    this.collectedItems.add("seed");
 
     this.inventory.push({
-        imageKey: "sword"
+        imageKey: "seed"
     });
 
     this.updateInventoryDisplay();
 
     object.destroy();
+}
+
+// -----------------------------------------------------
+// LAKE INTERACTION
+// -----------------------------------------------------
+
+interactLake(object) {
+
+    // First requirement: Red Herring
+    if (!this.collectedItems.has("red_herring")) {
+
+        alert(
+            "Something about this lake seems suspicious. " +
+            "Perhaps you need something unusual to approach it."
+        );
+
+        return;
+    }
+
+    // Unlock lake access
+    this.lakeAccessible = true;
+
+    // Second requirement: Seed
+    if (!this.collectedItems.has("seed")) {
+
+        alert(
+            "The Red Herring allows you to approach the lake. " +
+            "Perhaps something should be thrown into it."
+        );
+
+        return;
+    }
+
+    // Don't repeat interaction
+    if (this.seedUsed) {
+        return;
+    }
+
+    alert(
+        "You throw the seed into the lake. " +
+        "The water begins to glow..."
+    );
+
+    this.seedUsed = true;
+
+    // Remove seed
+    this.collectedItems.delete("seed");
+
+    this.inventory = this.inventory.filter(item =>
+        item.imageKey !== "seed"
+    );
+    // remove red herring
+this.collectedItems.delete("red_herring");
+
+    this.inventory = this.inventory.filter(item =>
+        item.imageKey !== "red_herring"
+    );
+    // Give Holy Glitch
+    this.collectedItems.add("holy_glitch");
+
+    this.inventory.push({
+        imageKey: "holy_glitch"
+    });
+
+    this.holyGlitch = true;
+
+    this.updateInventoryDisplay();
+
+    alert(
+        "You received the Holy Glitch!"
+    );
 }
 
 // -----------------------------------------------------
@@ -1564,7 +1635,12 @@ createInteractables() {
             image: "chest"
         },
 
-      
+        // Holy Cross in F2
+        "5,1": {
+            type: "holy_cross",
+            image: "holy_cross"
+        },
+
         // Boss in H8
         "7,7": {
             type: "boss",
