@@ -135,11 +135,11 @@
         <h2>Party</h2>
 
         <div id="playerChoices">
-            <div class="player-choice selected" data-player="1">
+            <div class="player-choice selected" data-player="0">
                 <img src="wizard.png" alt="Wizard">
             </div>
 
-            <div class="player-choice" data-player="0">
+            <div class="player-choice" data-player="1">
                 <img src="warrior.png" alt="Warrior">
             </div>
             
@@ -664,6 +664,7 @@ class GameScene extends Phaser.Scene {
     create() {
 
         this.cursors = this.input.keyboard.createCursorKeys();
+        this.interactKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
 
         this.wallGroup = this.physics.add.staticGroup();
 
@@ -1120,34 +1121,8 @@ updateInventoryDisplay() {
 
         slot.appendChild(image);
 
-        // -------------------------------------------------
-        // CHECK IF ITEM IS USABLE
-        // -------------------------------------------------
 
-        if (USABLE_ITEMS.includes(imageKey)) {
-
-            const useButton = document.createElement("button");
-
-            useButton.textContent = "USE";
-
-            useButton.style.position = "absolute";
-            useButton.style.bottom = "-18px";
-            useButton.style.left = "50%";
-            useButton.style.transform = "translateX(-50%)";
-            useButton.style.fontSize = "9px";
-            useButton.style.padding = "2px 5px";
-            useButton.style.cursor = "pointer";
-
-            useButton.addEventListener("click", (event) => {
-
-                // Stop the click from also dropping the item
-                event.stopPropagation();
-
-                this.useItem(index);
-            });
-
-            slot.appendChild(useButton);
-        }
+       
     });
 }
    
@@ -1227,10 +1202,9 @@ updateInventoryDisplay() {
     "7,0": "cursed_bow",
     "5,4": "spd_boots",
     "0,4": "spell",
-    "3,4": "key",
+    "3,0": "key",
     "4,7": "potion",
-    "5,3": "sword",
-    "6,6": "holy_glitch",
+    "6,6": "holy_glitch"
     };
 
     // Check whether this room contains an item
@@ -1268,52 +1242,7 @@ updateInventoryDisplay() {
     // Add to item group
     this.itemGroup.add(itemObject);
 }
-// =====================================================
-// INTERACTABLE OBJECTS
-// =====================================================
 
-createInteractables() {
-
-    this.interactableGroup.clear(true, true);
-
-    const roomKey = `${this.roomX},${this.roomY}`;
-
-    const interactableRooms = {
-
-        "3,7": "chest",
-        "4,5": "lake",
-        "6,7": "boss_door"
-
-    };
-
-    // Check if this room contains an interactable
-    if (!(roomKey in interactableRooms)) {
-        return;
-    }
-
-    const imageKey = interactableRooms[roomKey];
-
-    const interactable = this.add.image(
-        ROOM_PIXELS / 2,
-        ROOM_PIXELS / 2 + 100,
-        imageKey
-    );
-
-    interactable.setDisplaySize(70, 70);
-    interactable.setDepth(6);
-
-    // Store information about the object
-    interactable.imageKey = imageKey;
-    interactable.roomKey = roomKey;
-
-    // Add it to the interactable group
-    this.interactableGroup.add(interactable);
-
-interactable.type = "chest"
-if (item.imageKey === "key" && target.type === "chest") {
-    // Open chest
-}
-}
 // =====================================================
 // COLLECT NORMAL ITEMS
 // =====================================================
@@ -1469,10 +1398,144 @@ canUseItem(itemName) {
     return false;
 }
 
+// =====================================================
+// INTERACTIONS
+// =====================================================
 
-// =====================================================
+// -----------------------------------------------------
+// BOULDER INTERACTION
+// ----------------------------------------------------
+
+interactBoulder(object) {
+
+    if (this.boulderMoved) {
+        return;
+    }
+
+    if (this.currentPlayerClass.name !== "Warrior") {
+
+        alert(
+            "The boulder is too heavy to move. " +
+            "A stronger character may be needed."
+        );
+
+        return;
+    }
+
+    alert(
+        "The Warrior pushes the boulder aside!"
+    );
+
+    this.boulderMoved = true;
+
+    object.destroy();
+}
+
+// -----------------------------------------------------
+// CHEST INTERACTION
+// -----------------------------------------------------
+
+interactChest(object) {
+
+    if (this.chestOpened) {
+        return;
+    }
+
+    if (!this.collectedItems.has("key")) {
+
+        alert(
+            "The chest is locked. You need a key."
+        );
+
+        return;
+    }
+
+    alert(
+        "The key unlocks the chest. Inside is a mysterious sword!"
+    );
+
+    this.chestOpened = true;
+
+    // Remove key
+    this.collectedItems.delete("key");
+
+    this.inventory = this.inventory.filter(item =>
+        item.imageKey !== "key"
+    );
+
+    // Give sword
+    this.collectedItems.add("sword");
+
+    this.inventory.push({
+        imageKey: "sword"
+    });
+
+    this.updateInventoryDisplay();
+
+    object.destroy();
+}
+
+// -----------------------------------------------------
+// INTERACTION SYSTEM
+// -----------------------------------------------------
+
+checkInteraction() {
+
+    if (!Phaser.Input.Keyboard.JustDown(this.interactKey)) {
+        return;
+    }
+
+    const objects = this.interactableGroup.getChildren();
+
+    objects.forEach(object => {
+
+        const distance = Phaser.Math.Distance.Between(
+            this.player.x,
+            this.player.y,
+            object.x,
+            object.y
+        );
+
+        if (distance <= 100) {
+
+            this.interactWithObject(object);
+
+        }
+
+    });
+}
+// -----------------------------------------------------
+// INTERACT WITH OBJECT
+// ----------------------------------------------------
+
+interactWithObject(object) {
+
+    switch (object.interactableType) {
+
+        case "boulder":
+            this.interactBoulder(object);
+            break;
+
+        case "chest":
+            this.interactChest(object);
+            break;
+
+        case "lake":
+            this.interactLake(object);
+            break;
+
+        case "holy_cross":
+            this.interactHolyCross(object);
+            break;
+
+        case "boss":
+            this.interactBoss(object);
+            break;
+    }
+}
+// -----------------------------------------------------
 // INTERACTABLE OBJECTS
-// =====================================================
+// ----------------------------------------------------
 
 createInteractables() {
 
@@ -1685,6 +1748,8 @@ createInteractables() {
         }
 
         this.animatePlayer(isMoving, delta);
+
+        this.checkInteraction();
 
 
         // -------------------------
