@@ -135,11 +135,11 @@
         <h2>Party</h2>
 
         <div id="playerChoices">
-            <div class="player-choice" data-player="0">
+            <div class="player-choice selected" data-player="1">
                 <img src="wizard.png" alt="Wizard">
             </div>
 
-            <div class="player-choice selected" data-player="1">
+            <div class="player-choice" data-player="0">
                 <img src="warrior.png" alt="Warrior">
             </div>
             
@@ -214,7 +214,7 @@ const WORLD_HEIGHT = 8;
 // COLOUR PALETTE
 // =====================================================
 // This determins the floor colour
-const FLOOR_COLOR = "#1E1F24";
+const FLOOR_COLOR = "#2e2e2e";
 // This determins the wall colour pallete
 const WALL_BASE = 0x5B6B48;
 const WALL_DARK = 0x3F4A31;
@@ -552,10 +552,10 @@ new interactibleClass(
         50,
         0,
         0,
-        1,
-        1,
-        1,
-        1
+        32,
+        32,
+        32,
+        32
     ),
     new interactibleClass(
         "lake",
@@ -565,10 +565,10 @@ new interactibleClass(
         0,
         0,
         50,
-        1,
-        1,
-        1,
-        1
+        32,
+        32,
+        32,
+        32
     ),
      new interactibleClass(
         "Boss Room Door",
@@ -578,8 +578,8 @@ new interactibleClass(
         0,
         0,
         50,
-        1,
-        1,
+        32,
+        32,
         32,
         32
     ),
@@ -611,7 +611,7 @@ const USABLE_ITEMS = [
 const item_targets = {
     "key": "chest",
     "spell": "chest",
-    "seed": "lake",
+    "red_herring": "lake",
     "holy_glitch": "boss_room",
     "red_herring": "holy_glitch"
 };
@@ -654,7 +654,9 @@ class GameScene extends Phaser.Scene {
         this.load.image("chest", "chest.png");
         this.load.image("lake", "lake.png");
         this.load.image("boss_door", "boss_door.png");
-       
+        this.load.image("dragon", "dragon.png");
+        this.load.image("boulder", "boulder.png");
+
         
     }
 
@@ -676,11 +678,12 @@ class GameScene extends Phaser.Scene {
         // Inventory-related game states
 this.chestOpen = false;
 this.objectLocated = false;
-this.holyRepelActive = false;
 this.lakeAccessible = false;
 this.holyGlitch = false;
 this.bossDoorOpen = false;
-this.rockMoved = false;
+this.boulderMoved = false;
+this.bossDefeated = false;
+
 
         this.itemGroup = this.physics.add.group();
         this.droppedGroup = this.physics.add.group();
@@ -698,8 +701,8 @@ this.rockMoved = false;
             "",
             {
                 fontSize: "36px",
-                color: "#FFF8E7",
-                stroke: "#000000",
+                color: "#000000",
+                stroke: "#ffffff",
                 strokeThickness: 4
             }
         );
@@ -1032,12 +1035,6 @@ useSpell(slotIndex) {
     // The actual spell function will go here
 }
 
-useSeed(slotIndex) {
-
-    console.log("Seed used.");
-
-    // The actual lake/seed function will go here
-}
 
 useHolyGlitch(slotIndex) {
 
@@ -1107,7 +1104,7 @@ updateInventoryDisplay() {
         if (!hasItem) {
 
             image.style.filter = "grayscale(100%)";
-            image.style.opacity = "0.05";
+            image.style.opacity = "0.01";
 
             slot.appendChild(image);
 
@@ -1472,6 +1469,68 @@ canUseItem(itemName) {
     return false;
 }
 
+
+// =====================================================
+// INTERACTABLE OBJECTS
+// =====================================================
+
+createInteractables() {
+
+    // Clear old interactables
+    this.interactableGroup.clear(true, true);
+
+    const roomKey = `${this.roomX},${this.roomY}`;
+
+    const interactables = {
+
+        // Boulder in A4
+        "0,3": {
+            type: "boulder",
+            image: "boulder"
+        },
+
+        // Lake in F7
+        "5,6": {
+            type: "lake",
+            image: "lake"
+        },
+
+        // Chest in D8
+        "3,7": {
+            type: "chest",
+            image: "chest"
+        },
+
+      
+        // Boss in H8
+        "7,7": {
+            type: "boss",
+            image: "dragon_boss"
+        }
+
+    };
+
+    if (!(roomKey in interactables)) {
+        return;
+    }
+
+    const data = interactables[roomKey];
+
+    const object = this.add.image(
+        ROOM_PIXELS / 2,
+        ROOM_PIXELS / 2,
+        data.image
+    );
+
+    object.setDisplaySize(80, 80);
+    object.setDepth(7);
+
+    object.interactableType = data.type;
+
+    this.physics.add.existing(object, true);
+
+    this.interactableGroup.add(object);
+}
 
     // =====================================================
     // ROOM DRAWING
