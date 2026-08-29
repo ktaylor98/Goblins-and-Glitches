@@ -164,7 +164,7 @@
                 <img src="key.png" alt="key">
             </div>
             <div class="slot">
-                <img src="holy_cross.png" alt="holy cross">
+                <img src="potion.png" alt="holy cross">
             </div>
             <div class="slot">
                 <img src="spell.png" alt="spell">
@@ -416,8 +416,8 @@ new ItemClass(
 
 
     new ItemClass(
-        "holy_cross",
-        "holy_cross",
+        "potion",
+        "potion",
         0x5DA9E9,
         230,
         120,
@@ -586,7 +586,7 @@ new interactibleClass(
 ]
 const INVENTORY_ITEMS = [
     "key",
-    "holy_cross",
+    "potion",
     "spell",
     "seed",
     "red_herring",
@@ -611,7 +611,7 @@ const USABLE_ITEMS = [
 const item_targets = {
     "key": "chest",
     "spell": "chest",
-    "red_herring": "lake",
+    "seed": "lake",
     "holy_glitch": "boss_room",
     "red_herring": "holy_glitch"
 };
@@ -643,7 +643,7 @@ class GameScene extends Phaser.Scene {
         this.load.image("rogue", "rogue.png");
         this.load.image("key", "key.png");
         this.load.image("seed", "seed.png");
-        this.load.image("holy_cross", "holy_cross.png");
+        this.load.image("potion", "potion.png");
         this.load.image("cursed_bow", "cursed_bow.png");
         this.load.image("red_herring", "red_herring.png");
         this.load.image("holy_glitch", "holy_glitch.png");
@@ -656,6 +656,7 @@ class GameScene extends Phaser.Scene {
         this.load.image("boss_door", "boss_door.png");
         this.load.image("dragon", "dragon.png");
         this.load.image("boulder", "boulder.png");
+         this.load.image("holy_cross", "holy_cross.png");
 
         
     }
@@ -1546,6 +1547,38 @@ this.collectedItems.delete("red_herring");
     );
 }
 
+// -----------------------------------------------------
+// HOLY CROSS INTERACTION
+// -----------------------------------------------------
+
+interactHolyCross(object) {
+
+    if (this.currentPlayerClass.name !== "Cleric") {
+
+        alert(
+            "A powerful holy energy surrounds the cross. " +
+            "Only a Cleric can use its power."
+        );
+
+        return;
+    }
+
+    if (this.holyRepelActive) {
+
+        alert(
+            "The Holy Repel blessing is already active."
+        );
+
+        return;
+    }
+
+    this.holyRepelActive = true;
+
+    alert(
+        "The Cleric activates Holy Repel! " +
+        "Their health is now unlimited."
+    );
+}
 // -----------------------------------------------------
 // INTERACTION SYSTEM
 // -----------------------------------------------------
