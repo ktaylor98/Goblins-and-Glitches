@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Phaser Room Grid - Player Class Cave Game</title>
+<title>goblins and glitches</title>
 
 <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.js"></script>
 
@@ -603,10 +603,8 @@ const interactibles = [
    
 ];
 const USABLE_ITEMS = [
-    "key",
     "spell",
-    "seed",
-    "red_herring"
+    "holy_glitch",
 ];
 const item_targets = {
     "key": "chest",
@@ -666,7 +664,7 @@ class GameScene extends Phaser.Scene {
 
         this.cursors = this.input.keyboard.createCursorKeys();
         this.interactKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
-
+      
         this.wallGroup = this.physics.add.staticGroup();
 
         this.inventory = [];
@@ -1579,6 +1577,33 @@ interactHolyCross(object) {
         "Their health is now unlimited."
     );
 }
+
+// -----------------------------------------------------
+// LOCATE OBJECT SPELL
+// -----------------------------------------------------
+
+useLocateObjectSpell(object) {
+
+
+    if (this.currentPlayerClass.name !== "Wizard") {
+
+        alert(
+            "The scroll contains powerful magic. " +
+            "Only the Wizard can understand it."
+        );
+
+        return;
+    }
+
+    this.objectLocated = true;
+
+    alert(
+        "The Wizard casts Locate Object...\n" +
+        "A vision appears:\n" +
+        "The chest lies in room D8.\n" +
+        "It requires a key to open."
+    );
+}
 // -----------------------------------------------------
 // INTERACTION SYSTEM
 // -----------------------------------------------------
@@ -1590,6 +1615,7 @@ checkInteraction() {
     }
 
     const objects = this.interactableGroup.getChildren();
+   
 
     objects.forEach(object => {
 
@@ -1607,9 +1633,10 @@ checkInteraction() {
         }
 
     });
+
 }
 // -----------------------------------------------------
-// INTERACT WITH OBJECT
+// INTERACT WITH objects
 // ----------------------------------------------------
 
 interactWithObject(object) {
@@ -1627,6 +1654,9 @@ interactWithObject(object) {
         case "lake":
             this.interactLake(object);
             break;
+        case "locate_object_spell":
+            this.interactLocateObjectSpell(object);
+            break;
 
         case "holy_cross":
             this.interactHolyCross(object);
@@ -1634,6 +1664,24 @@ interactWithObject(object) {
 
         case "boss":
             this.interactBoss(object);
+            break;
+    }
+}
+
+// -----------------------------------------------------
+// INTERACT WITH items
+// ----------------------------------------------------
+
+interactWithitem(item) {
+
+    switch (item.interactableType) {
+
+        case "locate_object_spell":
+            this.interactLocateObjectSpell(item);
+            break;
+
+        case "holy_glitch":
+            this.interactHolyGlitch(item);
             break;
     }
 }
