@@ -254,7 +254,7 @@ const Lose_Room_Y6 = WORLD_HEIGHT - 5
 const Lose_Room_X7 = WORLD_WIDTH - 2
 const Lose_Room_Y7 = WORLD_HEIGHT - 1
 const Lose_Room_X8 = WORLD_WIDTH - 8
-const Lose_Room_Y8 = WORLD_HEIGHT - 1
+const Lose_Room_Y8 = WORLD_HEIGHT - 4
 // =====================================================
 // PLAYER CLASS DATA
 // =====================================================
@@ -653,10 +653,7 @@ class GameScene extends Phaser.Scene {
         this.load.image("lake", "lake.png");
         this.load.image("boss_door", "boss_door.png");
         this.load.image("dragon", "dragon.png");
-        this.load.image("boulder", "boulder.png");
-         this.load.image("holy_cross", "holy_cross.png");
-
-        
+        this.load.image("holy_cross", "holy_cross.png");
     }
 
 
@@ -709,6 +706,27 @@ this.bossDefeated = false;
 
         this.roomText.setOrigin(0.5);
         this.roomText.setDepth(20);
+
+
+        this.controlsText = this.add.text(
+    ROOM_PIXELS / 2,
+    100,
+    "",
+    {
+        fontSize: "20px",
+        color: "#FFF8E7",
+        align: "center",
+        backgroundColor: "#000000",
+        padding: {
+            x: 15,
+            y: 15
+        }
+    }
+);
+
+this.controlsText.setOrigin(0.5);
+this.controlsText.setDepth(20);
+
 
         this.winPad = this.add.circle(WIN_X, WIN_Y, 25, 0x00ff00);
         this.losePad = this.add.circle(LOSE_X, LOSE_Y, 25, 0x1E1F24);
@@ -797,7 +815,26 @@ this.bossDefeated = false;
             playerClass.displayWidth,
             playerClass.displayHeight
         );
+            let health = playerClass.health;
+            let damage = playerClass.damage;
+            let magic = playerClass.magic;
+            let speed = playerClass.speed;
 
+            if (this.collectedItems.has("str_belt")) {
+    damage += 20;
+        }
+
+        if (this.collectedItems.has("spd_boots")) {
+    speed += 50;
+}
+
+if (this.collectedItems.has("cursed_bow")) {
+    speed -= 50;
+}
+
+if (this.collectedItems.has("potion")) {
+    speed += 50;
+}
         // Tint the black player sprite so it is visible on the cave floor.
         this.player.setTintFill(playerClass.colour);
 
@@ -820,11 +857,11 @@ this.bossDefeated = false;
 
         statsBox.innerHTML = `
             <strong>${playerClass.name}</strong><br>
-            HP: ${playerClass.health}<br>
-            Damage: ${playerClass.damage}<br>
-            Magic: ${playerClass.magic}<br>
-            Speed: ${playerClass.speed}
-        `;
+            HP: ${health}<br>
+            Damage: ${damage}<br>
+             Magic: ${magic}<br>
+            Speed: ${speed}
+            `;
     }
 
 
@@ -842,12 +879,6 @@ this.bossDefeated = false;
 
                 this.applyPlayerClass(selectedClass);
                 
-                if(selectedClass.name === "cleric")
-                {
-            alert("you lose! please try again");
-            this.scene.stop();
-            return;
-        }
                 buttons.forEach(btn => {
                     btn.classList.remove("selected");
                 });
@@ -882,11 +913,29 @@ this.bossDefeated = false;
 
     updateRoomLabel() {
 
-        const letter = String.fromCharCode(65 + this.roomX);
-        const number = this.roomY + 1;
+    const letter = String.fromCharCode(65 + this.roomX);
+    const number = this.roomY + 1;
 
-        this.roomText.setText(`${letter}${number}`);
+    this.roomText.setText(`${letter}${number}`);
+
+    // Show controls only in starting room A1
+    if (this.roomX === 0 && this.roomY === 0) {
+
+        this.controlsText.setText(
+            "CONTROLS\n\n" +
+            "Arrow Keys - Move\n" +
+            "E - Interact / Use large objects e.g. a chest\n" +
+            "move over small items - Pick them up e.g. a key\n" +
+            "left Click Character icon - Switch Character"
+        );
+
+        this.controlsText.setVisible(true);
+
+    } else {
+
+        this.controlsText.setVisible(false);
     }
+}
 
 
     // =====================================================
@@ -1199,8 +1248,7 @@ updateInventoryDisplay() {
     "0,1": "red_herring",
     "2,2": "str_belt",
     "7,0": "cursed_bow",
-    "5,4": "spd_boots",
-    "0,4": "spell",
+    "5,3": "spd_boots",
     "3,0": "key",
     "4,7": "potion",
     
@@ -1249,6 +1297,13 @@ updateInventoryDisplay() {
 collectItem(player, item) {
 
     const itemName = item.imageKey;
+
+    // Locate Object Scroll is used directly,
+    // not added to the inventory
+    if (itemName === "spell") {
+        this.useSpell(item);
+        return;
+    }
 
     // Don't pick up the same item twice
     if (this.collectedItems.has(itemName)) {
@@ -1401,34 +1456,6 @@ canUseItem(itemName) {
 // INTERACTIONS
 // =====================================================
 
-// -----------------------------------------------------
-// BOULDER INTERACTION
-// ----------------------------------------------------
-
-interactBoulder(object) {
-
-    if (this.boulderMoved) {
-        return;
-    }
-
-    if (this.currentPlayerClass.name !== "Warrior") {
-
-        alert(
-            "The boulder is too heavy to move. " +
-            "A stronger character may be needed."
-        );
-
-        return;
-    }
-
-    alert(
-        "The Warrior pushes the boulder aside!"
-    );
-
-    this.boulderMoved = true;
-
-    object.destroy();
-}
 
 // -----------------------------------------------------
 // CHEST INTERACTION
@@ -1440,10 +1467,18 @@ interactChest(object) {
         return;
     }
 
-    if (!this.collectedItems.has("key")) {
+    if (!this.collectedItems.has("key")  ) {
 
         alert(
             "The chest is locked. You need a key."
+        );
+
+        return;
+    }
+    if (this.currentPlayerClass.name !== "Rogue") {
+
+        alert(
+            "the lock seems delicate and fragile, perhaps a rogue could pick it."
         );
 
         return;
@@ -1500,6 +1535,16 @@ interactLake(object) {
         alert(
             "The Red Herring allows you to approach the lake. " +
             "Perhaps something should be thrown into it."
+        );
+
+        return;
+    }
+ // third requirement: holy cross acitve
+    if (!this.holy_cross_used) {
+
+        alert(
+            "the seed doesn't seem to work on its own. " +
+            "Perhaps a mystical power is needed."
         );
 
         return;
@@ -1579,30 +1624,85 @@ interactHolyCross(object) {
 }
 
 // -----------------------------------------------------
-// LOCATE OBJECT SPELL
+// USE LOCATE OBJECT SPELL
 // -----------------------------------------------------
 
-useLocateObjectSpell(object) {
+interactSpell() {
 
-
+    // Only the Wizard can use the spell
     if (this.currentPlayerClass.name !== "Wizard") {
+        alert("Only the Wizard has enough magic to use this spell.");
+        return;
+    }
+
+    // Stop repeated use
+    if (this.objectLocated) {
+        return;
+    }
+
+    // Activate spell
+if (this.objectLocated = true) {
+
+    alert(
+        "The scroll glows brightly...\n" +
+        "A magical vision appears...\n" +
+        "You see a chest located in room D8. \n" +
+        "You can need to use a key to open it. \n" +
+        "the key can be found in room D1."
+    );
+
+    // Remove the spell from the room
+    this.collectedRooms.add("0,7");
+
+    // Redraw items so the spell disappears
+    this.createRoomItems();
+}
+}
+// -----------------------------------------------------
+// BOSS INTERACTION
+// -----------------------------------------------------
+
+interactBoss(object) {
+
+    if (this.currentPlayerClass.name !== "warrior" || this.currentPlayerClass.name !== "Cleric") {
 
         alert(
-            "The scroll contains powerful magic. " +
-            "Only the Wizard can understand it."
+            "The dragon is far too powerful. " +
+            "Another character may be needed."
         );
 
         return;
     }
 
-    this.objectLocated = true;
+    if (!this.holyRepelActive && !this.collectedItems.has("str_belt")) {
+
+        alert(
+            "The dragon overwhelms you. " +
+            "You need the protection of Holy Repel."
+        );
+
+        this.scene.stop();
+
+        return;
+    }
+
+    if (this.bossDefeated) {
+        return;
+    }
+
+    this.bossDefeated = true;
 
     alert(
-        "The Wizard casts Locate Object...\n" +
-        "A vision appears:\n" +
-        "The chest lies in room D8.\n" +
-        "It requires a key to open."
+        "Protected by Holy Repel and empowered by the strength of the belt, the you defeat the Dragon!"
     );
+
+    object.destroy();
+
+    alert(
+        "You have won the game congrats!"
+    );
+
+    this.scene.stop();
 }
 // -----------------------------------------------------
 // INTERACTION SYSTEM
@@ -1654,8 +1754,8 @@ interactWithObject(object) {
         case "lake":
             this.interactLake(object);
             break;
-        case "locate_object_spell":
-            this.interactLocateObjectSpell(object);
+        case "spell":
+            this.interactSpell(object);
             break;
 
         case "holy_cross":
@@ -1668,23 +1768,7 @@ interactWithObject(object) {
     }
 }
 
-// -----------------------------------------------------
-// INTERACT WITH items
-// ----------------------------------------------------
 
-interactWithitem(item) {
-
-    switch (item.interactableType) {
-
-        case "locate_object_spell":
-            this.interactLocateObjectSpell(item);
-            break;
-
-        case "holy_glitch":
-            this.interactHolyGlitch(item);
-            break;
-    }
-}
 // -----------------------------------------------------
 // INTERACTABLE OBJECTS
 // ----------------------------------------------------
@@ -1698,11 +1782,7 @@ createInteractables() {
 
     const interactables = {
 
-        // Boulder in A4
-        "0,3": {
-            type: "boulder",
-            image: "boulder"
-        },
+    
 
         // Lake in F7
         "5,6": {
@@ -1726,8 +1806,13 @@ createInteractables() {
         "7,7": {
             type: "boss",
             image: "dragon_boss"
+        },
+        
+         // locate object spell in A8
+        "0,7": {
+            type: "spell",
+            image: "spell"
         }
-
     };
 
     if (!(roomKey in interactables)) {
@@ -1833,6 +1918,27 @@ createInteractables() {
 
         this.roomX += dx;
         this.roomY += dy;
+
+const nextRoomX = this.roomX + dx;
+const nextRoomY = this.roomY + dy;
+
+// Prevent entry into boss room without Holy Glitch
+if (
+    nextRoomX === 7 &&
+    nextRoomY === 7 &&
+    !this.holyGlitch &&
+    !this.holyRepelActive
+) {
+
+    alert(
+        "A mysterious force blocks the doorway. " +
+        "it seems you need something special to proceed."
+    );
+
+    return;
+}
+
+
 
         this.drawRoom();
 
@@ -1946,22 +2052,22 @@ createInteractables() {
         // -------------------------
 
         const deathMessages = [
-    "The pressure plate was the last thing you stepped on. you lose! better luck next time.",
-    "The walls had teeth. You found out too late. you lose! better luck next time.",
-    "You should have watched where you stepped. you lose! better luck next time.",
-    "The floor gave way beneath you. you lose! better luck next time.",
-    "The arrows found their mark. you lose! better luck next time.",
-    "The ceiling came down faster than you could run. you lose! better luck next time.",
-    "The pit beneath your feet was deeper than expected. you lose! better luck next time.",
-    "You triggered something that was best left untouched. you lose! better luck next time.",
-    "The swinging blade had impeccable timing. you lose! better luck next time.",
-    "The poison dart trap did exactly what it was designed to do. you lose! better luck next time.",
-    "The dungeon's fire was hotter than your armour could handle. you lose! better luck next time.",
-    "You opened the wrong door. you lose! better luck next time.",
-    "The floor wasn't quite as solid as it looked. you lose! better luck next time.",
-    "The spikes were waiting patiently below. you lose! better luck next time.",
-    "The boulder was faster than you. you lose! better luck next time.",
-    "You heard the click. Then everything went dark. you lose! better luck next time."
+    "The pressure plate was the last thing you stepped on. you lose! better luck next time. refresh the page to try again.",
+    "The walls had teeth. You found out too late. you lose! better luck next time. refresh the page to try again.",
+    "You should have watched where you stepped. you lose! better luck next time. refresh the page to try again.",
+    "The floor gave way beneath you. you lose! better luck next time. refresh the page to try again.",
+    "The arrows found their mark. you lose! better luck next time. refresh the page to try again.",
+    "The ceiling came down faster than you could run. you lose! better luck next time. refresh the page to try again.",
+    "The pit beneath your feet was deeper than expected. you lose! better luck next time. refresh the page to try again.",
+    "You triggered something that was best left untouched. you lose! better luck next time. refresh the page to try again.",
+    "The swinging blade had impeccable timing. you lose! better luck next time. refresh the page to try again.",
+    "The poison dart trap did exactly what it was designed to do. you lose! better luck next time. refresh the page to try again.",
+    "The dungeon's fire was hotter than your armour could handle. you lose! better luck next time. refresh the page to try again.",
+    "You opened the wrong door. you lose! better luck next time. refresh the page to try again.",
+    "The floor wasn't quite as solid as it looked. you lose! better luck next time. refresh the page to try again.",
+    "The spikes were waiting patiently below. you lose! better luck next time. refresh the page to try again.",
+    "The boulder was faster than you. you lose! better luck next time. refresh the page to try again.",
+    "You heard the click. Then everything went dark. you lose! better luck next time. refresh the page to try again."
 ];
 
 function randomDeath() {
@@ -1969,6 +2075,19 @@ function randomDeath() {
         Math.floor(Math.random() * deathMessages.length)
     ];
     return message;
+}
+
+// -------------------------
+// SPELL INTERACTION
+// -------------------------
+
+if (
+    Phaser.Input.Keyboard.JustDown(this.useKey) &&
+    this.roomX === 0 &&
+    this.roomY === 7
+) {
+
+    this.useSpell();
 }
 
         // -------------------------
