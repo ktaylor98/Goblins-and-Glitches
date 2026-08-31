@@ -167,7 +167,7 @@
                 <img src="potion.png" alt="holy cross">
             </div>
             <div class="slot">
-                <img src="spell.png" alt="spell">
+                <img src="cursed_sword.png" alt="cursed sword">
             </div>
             <div class="slot">
                 <img src="seed.png" alt="seed">
@@ -388,8 +388,8 @@ class ItemClass {
 
 const Item_Classes = [
 new ItemClass(
-        "spell",
-        "spell",
+        "cursed_sword",
+        "cursed_sword",
         0xFF0000,
         0,
         50,
@@ -587,7 +587,7 @@ new interactibleClass(
 const INVENTORY_ITEMS = [
     "key",
     "potion",
-    "spell",
+    "cursed_sword",
     "seed",
     "red_herring",
     "cursed_bow",
@@ -601,10 +601,6 @@ const interactibles = [
     "lake",
     "boss_room_door" 
    
-];
-const USABLE_ITEMS = [
-    "spell",
-    "holy_glitch",
 ];
 const item_targets = {
     "key": "chest",
@@ -654,6 +650,7 @@ class GameScene extends Phaser.Scene {
         this.load.image("boss_door", "boss_door.png");
         this.load.image("dragon", "dragon.png");
         this.load.image("holy_cross", "holy_cross.png");
+        this.load.image("cursed_sword", "cursed_sword.png");
     }
 
 
@@ -821,20 +818,24 @@ this.controlsText.setDepth(20);
             let speed = playerClass.speed;
 
             if (this.collectedItems.has("str_belt")) {
-    damage += 20;
+    damage += 10;
         }
 
         if (this.collectedItems.has("spd_boots")) {
     speed += 50;
 }
 
-if (this.collectedItems.has("cursed_bow")) {
-    speed -= 50;
-}
-
 if (this.collectedItems.has("potion")) {
     speed += 50;
 }
+if (this.collectedItems.has("cursed_bow")) {
+    speed -= 45;
+}
+if (this.collectedItems.has("cursed_sword")) {
+    damage -= 5;
+}
+
+
         // Tint the black player sprite so it is visible on the cave floor.
         this.player.setTintFill(playerClass.colour);
 
@@ -1251,6 +1252,7 @@ updateInventoryDisplay() {
     "5,3": "spd_boots",
     "3,0": "key",
     "4,7": "potion",
+    "6,6": "cursed_sword",
     
     };
 
@@ -1298,12 +1300,6 @@ collectItem(player, item) {
 
     const itemName = item.imageKey;
 
-    // Locate Object Scroll is used directly,
-    // not added to the inventory
-    if (itemName === "spell") {
-        this.useSpell(item);
-        return;
-    }
 
     // Don't pick up the same item twice
     if (this.collectedItems.has(itemName)) {
@@ -1407,50 +1403,7 @@ collectItem(player, item) {
     this.createDroppedItems();
     
 }
-// =====================================================
-// CHECK ITEM USE
-// =====================================================
 
-canUseItem(itemName) {
-
-    const target = this.getItemTarget(itemName);
-
-    if (!target) {
-        return false;
-    }
-
-    // Spell can be used to locate the chest
-    if (itemName === "spell") {
-        return !this.spellUsed;
-    }
-
-    // Key can only be used after the chest has been located
-    if (itemName === "key") {
-        return this.objectLocated && !this.chestOpen;
-    }
-
-    // Seed can be used at the lake
-    if (itemName === "seed") {
-        return this.lakeAccessible && !this.seedUsed;
-    }
-
-    // Red herring can be used at the lake
-    if (itemName === "red_herring") {
-        return this.lakeAccessible && !this.redHerringUsed;
-    }
-
-    // Holy glitch can be used at the boss
-    if (itemName === "holy_glitch") {
-        return this.holyGlitch && !this.bossDoorOpen;
-    }
-
-    // Sword can be used at the boss
-    if (itemName === "sword") {
-        return this.bossDoorOpen && !this.swordUsed;
-    }
-
-    return false;
-}
 
 // =====================================================
 // INTERACTIONS
